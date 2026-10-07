@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Free tool for exterior cleaners to build professional RAMS and COSHH assessments, ready to download as PDF.">
+<title>Exterior Cleaning RAMS Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: working-tool split. Form rail on the left, live A4 document on the right; stacks with an Edit/Preview switch on phones. */
+:root{
+  --bg:#eef2f3; --panel:#ffffff; --panel-2:#f6f8f9; --ink:#14242c; --muted:#56656d; --line:#d5dde1;
+  --accent:#0a6a85; --accent-ink:#ffffff; --accent-soft:#dcedf2; --amber:#c98a00; --danger:#b3261e;
+  --focus:#0a6a85;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f181c; --panel:#162227; --panel-2:#1b2a30; --ink:#e3ecef; --muted:#93a4ab; --line:#2b3d44;
+  --accent:#4fb3cf; --accent-ink:#06222b; --accent-soft:#17343d; --amber:#e8b33a; --danger:#f2867e; --focus:#7fd0e6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f181c; --panel:#162227; --panel-2:#1b2a30; --ink:#e3ecef; --muted:#93a4ab; --line:#2b3d44;
+  --accent:#4fb3cf; --accent-ink:#06222b; --accent-soft:#17343d; --amber:#e8b33a; --danger:#f2867e; --focus:#7fd0e6; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body);margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.app{display:flex;flex-direction:column;height:100%}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+.brand-mark{width:34px;height:34px;flex:none}
+.brand h1{font:800 20px/1 var(--f-display);font-stretch:80%;letter-spacing:.01em;margin:0;text-transform:uppercase}
+.brand small{display:block;font:500 12px/1.2 var(--f-body);color:var(--muted);letter-spacing:.02em;text-transform:none;margin-top:2px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.small{padding:4px 9px;font-size:13px;border-radius:6px}
+.btn.danger{color:var(--danger)}
+.btn[disabled]{opacity:.55;cursor:progress}
+
+.main{flex:1;display:grid;grid-template-columns:minmax(340px,460px) 1fr;min-height:0}
+.form{overflow:auto;padding:16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:14px;min-width:0}
+.previewWrap{overflow:auto;padding:24px 16px 48px;min-width:0}
+.mobile-tabs{display:none}
+
+.notice{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:14px;display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.notice p{margin:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
+
+details.sec{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+details.sec>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;align-items:baseline;gap:10px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary .n{font:500 12px var(--f-mono);color:var(--accent)}
+details.sec>summary h2{font:700 16px/1.2 var(--f-display);font-stretch:88%;margin:0;letter-spacing:.01em}
+details.sec>summary .count{margin-left:auto;font-size:12px;color:var(--muted)}
+details.sec>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-left:8px;align-self:center;transition:transform .15s}
+details.sec[open]>summary::after{transform:rotate(-135deg)}
+details.sec>summary .count+*{margin-left:0}
+.secbody{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label.btn{text-transform:none;letter-spacing:0;color:var(--ink);font-size:13px;font-weight:600;align-self:flex-start}
+.field label,.lbl{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.field input,.field textarea,.field select{border:1px solid var(--line);background:var(--panel-2);border-radius:7px;padding:7px 9px;width:100%;min-width:0}
+.field textarea{min-height:64px;resize:vertical}
+.hint{font-size:13px;color:var(--muted);margin:0}
+
+.checks{display:flex;flex-direction:column;gap:6px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--panel-2)}
+.check:hover{border-color:var(--accent)}
+.check input{margin-top:3px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+.check b{display:block;font-weight:600}
+.check span{font-size:13px;color:var(--muted)}
+.check.on{border-color:var(--accent);background:var(--accent-soft)}
+
+.chemcard{border:1px solid var(--accent);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--panel-2)}
+.chemcard header{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.chemcard header b{font-weight:700}
+.row-add{display:flex;gap:8px;flex-wrap:wrap}
+.row-add select{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel-2);border-radius:7px;padding:7px 9px}
+.customhaz{border:1px dashed var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.lsrow{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.lsrow .field{width:90px}
+.joblist{display:flex;flex-direction:column;gap:6px}
+.jobitem{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
+.jobitem div{flex:1;min-width:0}
+.jobitem small{display:block;color:var(--muted)}
+.jobitem b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logoPrev{display:flex;align-items:center;gap:10px}
+.logoPrev img{max-height:44px;max-width:140px;border:1px solid var(--line);border-radius:4px;background:#fff;padding:2px}
+
+/* ---------- Document (always white paper, both themes) ---------- */
+.docswitch{display:flex;gap:6px;justify-content:center;margin:0 auto 16px;max-width:794px}
+.docswitch .btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.paperScaler{margin:0 auto;width:794px;transform-origin:top left}
+.doc{width:794px;background:#fff;color:#1a1f22;font:11.5px/1.45 "Source Sans 3","Segoe UI",Arial,sans-serif;padding:44px 48px;box-shadow:0 1px 3px rgba(0,0,0,.12),0 12px 32px rgba(0,0,0,.12)}
+.doc *{box-sizing:border-box}
+.doc.pdf{width:auto;padding:0;box-shadow:none}
+.doc h1,.doc h2,.doc h3{font-family:"Archivo","Arial Narrow",Arial,sans-serif;color:#0d2a35;text-wrap:balance}
+.doc .dhead{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:3px solid #0a6a85;padding-bottom:14px}
+.doc .dhead .co{display:flex;gap:12px;align-items:center}
+.doc .dhead img{max-height:56px;max-width:170px}
+.doc .dhead .coname{font:800 17px/1.15 "Archivo",Arial,sans-serif;font-stretch:85%;color:#0d2a35;text-transform:uppercase;letter-spacing:.02em}
+.doc .dhead .codet{color:#4d5a61;font-size:10.5px;margin-top:2px}
+.doc .dtitle{text-align:right}
+.doc .dtitle h1{font-size:22px;font-weight:800;font-stretch:78%;margin:0;text-transform:uppercase;letter-spacing:.02em;line-height:1.05}
+.doc .dtitle .sub{font-size:11px;color:#4d5a61;margin-top:4px}
+.doc .ref{font:500 11px "JetBrains Mono",Consolas,monospace;color:#0a6a85;margin-top:6px}
+.doc h2{font-size:14px;font-weight:800;font-stretch:85%;text-transform:uppercase;letter-spacing:.04em;margin:22px 0 8px;display:flex;gap:8px;align-items:baseline;border-bottom:1px solid #c9d4d8;padding-bottom:4px}
+.doc h2 .sn{font:500 11px "JetBrains Mono",Consolas,monospace;color:#0a6a85}
+.doc h3{font-size:12.5px;font-weight:700;margin:12px 0 4px;font-stretch:92%}
+.doc p{margin:0 0 6px}
+.doc table{width:100%;border-collapse:collapse;margin:4px 0 6px}
+.doc th,.doc td{border:1px solid #c9d4d8;padding:5px 7px;vertical-align:top;text-align:left}
+.doc th{background:#eef4f6;font-weight:700;color:#0d2a35;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em}
+.doc .kv th{width:28%;text-transform:none;font-size:11px;letter-spacing:0}
+.doc ol,.doc ul{margin:2px 0 6px;padding-left:18px}
+.doc li{margin:1px 0}
+.doc .rate{display:inline-block;min-width:54px;text-align:center;padding:2px 4px;border-radius:3px;font-weight:700;font-size:10.5px;white-space:nowrap}
+.doc .r-low{background:#d8efd9;color:#1d5e22}
+.doc .r-med{background:#fbe8b5;color:#6d4b00}
+.doc .r-high{background:#f6cdc9;color:#8a1b13}
+.doc td.c,.doc .ra td.c{text-align:center;white-space:nowrap}
+.doc .ra td:first-child{font-weight:600}
+.doc .matrix{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.doc .matrix table{width:auto}
+.doc .matrix td,.doc .matrix th{text-align:center;padding:3px 7px;font-size:10.5px}
+.doc .coshh{border:1px solid #c9d4d8;border-radius:4px;padding:10px 12px;margin:8px 0}
+.doc .coshh-h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.doc .coshh-h h3{margin:0}
+.doc .ghs{display:flex;gap:8px}
+.doc .ghs figure{margin:0;text-align:center;width:52px}
+.doc .ghs svg{width:38px;height:38px}
+.doc .ghs figcaption{font-size:8.5px;color:#4d5a61;line-height:1.1}
+.doc .tag{display:inline-block;background:#eef4f6;border:1px solid #c9d4d8;border-radius:3px;padding:0 5px;margin:0 3px 3px 0;font-size:10.5px}
+.doc .muted{color:#5c6970}
+.doc .sign td{height:30px}
+.doc .foot{margin-top:22px;border-top:1px solid #c9d4d8;padding-top:8px;font-size:9.5px;color:#5c6970;display:flex;justify-content:space-between;gap:12px}
+.doc .callout{background:#fff7e0;border:1px solid #ecd28b;border-radius:4px;padding:7px 10px;margin:6px 0}
+.doc .twocol{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}
+.doc .keep{break-inside:avoid;page-break-inside:avoid}
+.doc tr{break-inside:avoid;page-break-inside:avoid}
+
+@media (max-width:860px){
+  .main{grid-template-columns:1fr}
+  .mobile-tabs{display:flex;gap:6px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .mobile-tabs button{flex:1}
+  .mobile-tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .main[data-view="edit"] .previewWrap{display:none}
+  .main[data-view="preview"] .form{display:none}
+  .form{border-right:0}
+  .previewWrap{padding:16px 16px 40px;overflow-x:hidden}
+  .brand small{display:none}
+  .topbar{position:static;padding:10px 16px}
+  .actions{width:100%}
+  .actions .btn{flex:1 1 auto;justify-content:center;padding:6px 10px;font-size:14px}
+}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff}
+  .topbar,.mobile-tabs,.form,.docswitch,.toast{display:none!important}
+  .app,.main,.previewWrap{display:block!important;height:auto;overflow:visible;padding:0}
+  .paperScaler{transform:none!important;height:auto!important;width:auto}
+  .doc{width:auto;box-shadow:none;padding:0}
+  .doc h2{break-after:avoid}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="7" fill="var(--accent)"/><path d="M17 6c4 5.2 7 9 7 12.6A7 7 0 0 1 10 18.6C10 15 13 11.2 17 6Z" fill="var(--accent-ink)"/><path d="M13.5 19.5l2.4 2.4 4.6-5" stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><h1>RAMS Builder</h1><small>Risk assessments &amp; method statements for exterior cleaning</small></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnNew" type="button">New job</button>
+      <button class="btn" id="btnSave" type="button">Save job</button>
+      <button class="btn" id="btnPrint" type="button" hidden>Print</button>
+      <button class="btn" id="btnHtml" type="button" title="A print-ready web page you can open and print or save as PDF">Download printable</button>
+      <button class="btn primary" id="btnPdf" type="button">Download PDF</button>
+    </div>
+  </header>
+  <div class="mobile-tabs" role="group" aria-label="View">
+    <button class="btn" id="tabEdit" type="button" aria-pressed="true">Edit details</button>
+    <button class="btn" id="tabPrev" type="button" aria-pressed="false">Preview</button>
+  </div>
+  <div class="main" id="main" data-view="edit">
+    <div class="form" id="form"></div>
+    <div class="previewWrap" id="previewWrap"><div class="docswitch" role="group" aria-label="Document"><button type="button" class="btn" id="dtRams" aria-pressed="true">RAMS</button><button type="button" class="btn" id="dtCoshh" aria-pressed="false">COSHH assessment</button></div><div class="paperScaler" id="scaler"><div class="doc" id="doc"></div></div></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+"use strict";
+/* ================= Reference data ================= */
+const PPE = {
+  goggles:{n:"Chemical splash goggles or full face visor",s:"BS EN 166 (marked 3 for liquids)"},
+  glasses:{n:"Safety glasses",s:"BS EN 166"},
+  gloves_chem:{n:"Chemical-resistant gauntlets (nitrile / PVC)",s:"BS EN ISO 374-1"},
+  gloves_gen:{n:"General work gloves with wet grip",s:"BS EN 388"},
+  gloves_heat:{n:"Heat-resistant gloves",s:"BS EN 407"},
+  boots:{n:"Waterproof slip-resistant safety boots / wellingtons",s:"BS EN ISO 20345 S5 SRC"},
+  suit:{n:"Waterproof / chemical-resistant overalls or suit",s:"BS EN 14605 Type 4/6 when spraying chemicals"},
+  ear:{n:"Hearing protection (ear defenders or plugs)",s:"BS EN 352"},
+  resp:{n:"Respiratory protection (FFP3 for spray mist; combination filter if vapour)",s:"BS EN 149 / BS EN 14387, face-fit tested"},
+  helmet:{n:"Safety helmet",s:"BS EN 397"},
+  harness:{n:"Full body harness with short restraint lanyard (MEWP)",s:"BS EN 361 / BS EN 354"},
+  hivis:{n:"High-visibility vest or jacket",s:"BS EN ISO 20471 Class 2"}
+};
+
+const METHODS = {
+  pressure:{n:"Pressure washing",d:"Driveways, patios, paths and hard landscaping using pressure washer and rotary surface cleaner.",
+    ppe:["goggles","gloves_gen","boots","suit","ear"],
+    equip:["Pressure washer (petrol / electric, hot or cold)","Rotary surface cleaner","Lance and nozzle set","High-pressure hose and reel","Water tank or mains feed with backflow protection (double check valve / air gap)"],
+    haz:[
+      ["High-pressure water jet: injection injury and lacerations","Operatives, public",3,4,"Only trained operatives use the lance. Never point at people, animals or yourself. Trigger lock on when not spraying. Hoses, couplings and lance checked before use. Two hands on lance. Correct nozzle for surface.",1,4],
+      ["Grit, stones and debris thrown from the surface","Operatives, public, property",3,3,"Rotary surface cleaner used where possible. Exclusion zone with barriers. Eye protection worn. Vehicles moved, doors, windows and glazing protected.",1,3],
+      ["Slips on wet, algae-covered or slurry-covered surfaces","Operatives, public, occupants",4,3,"Slip-resistant footwear. Work backwards from cleaned areas. Wet floor signs. Slurry rinsed away. Occupants told to keep off until dry.",2,3],
+      ["Trips over hoses, leads and equipment","Operatives, public",3,3,"Hoses routed along edges and kept tidy. Hose ramps across walkways. Equipment never left across a public footpath unattended.",1,3],
+      ["Noise and hand-arm vibration from machine and lance","Operatives, neighbours",3,3,"Machine sited away from work area and neighbours. Hearing protection worn near the engine. Job rotation and breaks to limit trigger time. Working hours agreed with client.",2,2],
+      ["Fuel and exhaust fumes: fire, spills, carbon monoxide","Operatives, public",2,4,"Engines run outdoors only, never in garages. Refuel with engine off and cool. Fuel in approved, labelled containers. No smoking. Spill kit and fire extinguisher on vehicle.",1,4],
+      ["Manual handling of machines, hoses and tanks","Operatives",3,3,"Ramps or trolleys used. Two-person lift for heavy units. Manual handling training. Loads kept close to the body.",2,2]
+    ],
+    steps:["Sweep or blow loose debris; scrape heavy moss and weeds from joints.","Pre-wet surrounding plants and lawns; protect doors, glazing, vehicles and adjacent surfaces.","Apply pre-treatment (if specified) with a low-pressure sprayer at the stated dilution; allow dwell time and do not let it dry on.","Clean with a rotary surface cleaner, working systematically towards the drainage point; use the lance for edges and steps.","Rinse slurry to a suitable collection point; do not allow it to enter surface water drains.","Re-sand block paving joints with kiln-dried sand and apply post-treatment or sealer where included in the scope."]},
+  softwash:{n:"Soft washing",d:"Low-pressure chemical cleaning of render, brick, stone, cladding, fascias and soffits.",
+    ppe:["goggles","gloves_chem","boots","suit"],
+    equip:["Soft wash pump (12V or petrol) with proportioner","Chemical-resistant hose and reel","Labelled chemical containers / tanks","Low-pressure nozzles","Drain covers / socks","Soft brushes"],
+    haz:[
+      ["Skin and eye contact with chemicals from splashes or drift","Operatives, public, occupants",4,4,"COSHH assessment followed. Lowest effective concentration. Low-pressure application only. Work upwind. Goggles, gauntlets and suit worn. Eyewash and clean water on vehicle.",2,3],
+      ["Breathing spray mist or vapour","Operatives, public",3,3,"Coarse-droplet nozzles to avoid misting. Open air only, work upwind. RPE where mist cannot be avoided. Occupants asked to close windows and vents.",1,3],
+      ["Overspray damage to plants, vehicles, glass and neighbouring property","Property, neighbours",3,3,"Plants pre-wet and post-rinsed. Covers used. Vehicles moved. Spraying stopped in winds above about 15 mph. Neighbours told before work starts.",1,3],
+      ["Mixing incompatible chemicals (e.g. hypochlorite with acids releases chlorine gas)","Operatives, public",2,5,"Products never mixed except as the SDS directs. Dedicated, labelled tanks and sprayers for each product. Systems flushed between products. Mixing done in open air.",1,5]
+    ],
+    steps:["Inspect surfaces for cracked render, coatings and sensitive materials; carry out a test patch.","Agree with the occupant to close windows and vents; cover sockets, lights and vulnerable fittings; pre-wet plants.","Mix solution in open air at the stated dilution in a labelled container, adding chemical to water.","Apply bottom-up at low pressure, keeping the surface wet for the stated dwell time.","Agitate stubborn areas with a soft brush if needed.","Rinse top-down with clean low-pressure water; rinse plants and surrounding areas again."]},
+  roof:{n:"Roof cleaning",d:"Moss removal and biocide treatment of tiled or slate roofs.", wah:true,
+    ppe:["helmet","glasses","gloves_gen","boots"],
+    equip:["Hand scrapers and roof brushes","Low-pressure sprayer","Debris bags","Barriers and signage"],
+    haz:[
+      ["Falls from roof edge or access equipment","Operatives",3,5,"Work from the ground, MEWP, tower or scaffold wherever possible. No walking on roofs without edge protection. Work at Height Regulations 2005 hierarchy followed. Trained, competent operatives only.",1,5],
+      ["Falling through fragile roofs and rooflights","Operatives",2,5,"Fragile surfaces identified at survey and marked. Never step on them. Crawling boards or staging only under a specific plan.",1,5],
+      ["Falling moss, tiles and debris onto people below","Public, operatives, occupants",3,4,"Exclusion zone below with barriers and signs. Helmets for ground staff. Vehicles moved. Debris collected as work proceeds.",1,4],
+      ["Damage to roof coverings","Property",3,3,"Roof condition surveyed and photographed. Hand scraping and soft wash used rather than high pressure on tiles. Pre-existing damage reported to client.",1,3]
+    ],
+    steps:["Survey the roof from the ground or a safe platform: covering type, condition, fragile areas and possible asbestos.","Set an exclusion zone below; protect conservatory roofs, gutters and downpipes.","Remove moss by hand scraping or rotary brushing from a safe access position, working from ridge downwards.","Bag moss and debris; clear fallen debris from gutters and downpipes.","Apply biocide at the stated dilution with a low-pressure sprayer.","Rinse surrounding areas and check gutters and downpipes flow freely."]},
+  gutter:{n:"Gutter cleaning",d:"Clearing gutters and downpipes, normally with a gutter vacuum from the ground.", wah:true,
+    ppe:["glasses","gloves_gen","boots","ear"],
+    equip:["Gutter vacuum with carbon / glass-fibre poles","Pole camera and monitor","Drain rods","Waste bags"],
+    haz:[
+      ["Falls from height when ladders are used","Operatives",3,5,"Gutter vacuum from the ground is the first choice. Ladders only for short, light work, footed or tied, with a stand-off.",1,5],
+      ["Contact with overhead power lines from poles","Operatives",2,5,"Overhead lines identified before start. Safe clearance kept (HSE GS6). Poles never raised near lines.",1,5],
+      ["Falling debris and dust","Operatives, public",3,2,"Exclusion zone. Eye protection. Debris collected by vacuum.",1,2],
+      ["Biological hazards: droppings, nests, sharps, leptospirosis","Operatives",2,3,"Gloves worn. Camera inspection before clearing. Nests not disturbed. Hand washing before eating; cuts covered.",1,3],
+      ["Noise from vacuum unit","Operatives, neighbours",3,2,"Hearing protection worn near the unit. Unit sited away from neighbours.",1,2]
+    ],
+    steps:["Inspect gutters with a pole camera for blockages, damage and nests.","Set an exclusion zone; erect vacuum poles on stable ground clear of overhead lines.","Vacuum gutters and outlets, working along the run towards the downpipes.","Flush gutters and downpipes with water to confirm flow; rod any blocked downpipes.","Take before and after images for the client; bag and remove waste."]},
+  wfp:{n:"Window cleaning (water-fed pole)",d:"Glass and frames cleaned from the ground with pure water and a water-fed pole.",
+    ppe:["boots","gloves_gen"],
+    equip:["Water-fed pole (carbon / glass-fibre)","Pure water unit (RO / DI) and TDS meter","Hose reel","Brushes"],
+    haz:[
+      ["Pole contact with overhead power lines","Operatives",2,5,"Overhead lines checked before extending poles. Safe clearance kept (HSE GS6). Poles extended in a clear area.",1,5],
+      ["Musculoskeletal strain from pole work","Operatives",3,3,"Lightweight poles. Pole kept as short as the job allows. Good posture, breaks and job rotation.",2,2],
+      ["Water near outdoor sockets, lights and electrics","Operatives, occupants",2,4,"Spray kept away from electrical fittings. RCD protection on mains equipment. Leads inspected before use.",1,4],
+      ["Falling pole sections onto people","Public, occupants",2,3,"Pole sections locked. Exclusion zone kept. Public kept clear.",1,3]
+    ],
+    steps:["Check the pure water unit reads 000 ppm on the TDS meter.","Extend the pole in a clear area away from overhead lines.","Scrub frames, then glass, working top-down.","Rinse glass and frames with pure water and leave to dry spot-free.","Pack away poles and hoses and clear trip hazards."]},
+  ladderwin:{n:"Window cleaning (traditional / ladder)",d:"Traditional applicator and squeegee cleaning, including from ladders.", wah:true,
+    ppe:["boots","gloves_gen"],
+    equip:["Ladder (BS EN 131 Professional)","Ladder stand-off and leveller","Applicators, squeegees, scrapers","Bucket and tool belt"],
+    haz:[
+      ["Falls from ladders","Operatives",3,5,"Ladders only for short-duration (under 30 minutes), light work. Pre-use inspection. 1-in-4 angle, footed or tied, on firm level ground. Three points of contact; no over-reaching.",1,5],
+      ["Cuts from broken or damaged glass","Operatives",2,3,"Glass inspected before cleaning. Gloves worn. Damage reported to client.",1,3],
+      ["Dropped tools and buckets","Public, occupants",2,3,"Tool belt and tethers used. Exclusion zone below ladder.",1,3]
+    ],
+    steps:["Inspect the ladder (pre-use check) and ground conditions.","Position the ladder at 1-in-4, footed or tied, with stand-off if needed.","Wash with applicator and solution; squeegee and detail edges.","Move the ladder rather than over-reach; keep belt buckle within the stiles."]},
+  conservatory:{n:"Conservatory roof cleaning",d:"Glass or polycarbonate conservatory roofs, cleaned from the ground or a platform.",
+    ppe:["boots","gloves_gen","glasses"],
+    equip:["Water-fed pole with angled brush","Pure water unit","Soft brushes","Low-pressure sprayer (if detergent used)"],
+    haz:[
+      ["Falling through fragile conservatory roof","Operatives",2,5,"Nobody climbs on, kneels on or leans ladders against the roof. Cleaning done from the ground with a pole or from an independent platform.",1,5],
+      ["Damage to glazing, seals and polycarbonate","Property",2,3,"Soft brushes and low pressure only. Condition checked and photographed beforehand.",1,3]
+    ],
+    steps:["Inspect glazing bars, seals and roof panels; photograph existing damage.","Clear leaves and debris from roof and gutters with a pole.","Clean panels with a soft brush and pure water (or detergent at stated dilution), working top-down.","Rinse and clear gutters; dry and detail frames."]},
+  solar:{n:"Solar panel cleaning",d:"PV and solar thermal panels cleaned with pure water and soft brushes.",
+    ppe:["boots","gloves_gen"],
+    equip:["Water-fed pole with soft solar brush","Pure water unit and TDS meter","Hose reel"],
+    haz:[
+      ["Electric shock from damaged panels or DC cabling","Operatives",2,4,"Array visually inspected first. Damaged panels or exposed cabling not cleaned and reported to the client. Pure water only, no high pressure.",1,4],
+      ["Thermal shock and burns from hot panels","Operatives, property",2,3,"Cleaning done early or late in the day. Cold water not sprayed on hot panels.",1,3],
+      ["Falls if roof access is needed","Operatives",2,5,"Panels cleaned from the ground with a pole. No roof access without a separate plan and edge protection.",1,5]
+    ],
+    steps:["Inspect the array and cabling from the ground for damage.","Check pure water reads 000 ppm.","Brush panels gently with a soft brush, top-down.","Rinse with pure water and record before and after images."]},
+  decking:{n:"Decking, fence & timber cleaning",d:"Timber decking, fencing and garden furniture cleaned and brightened.",
+    ppe:["goggles","gloves_chem","boots"],
+    equip:["Pressure washer with fan nozzle / surface cleaner","Low-pressure sprayer","Stiff brushes"],
+    haz:[
+      ["Slips on wet, algae-covered timber","Operatives, occupants",4,3,"Slip-resistant footwear. Work backwards off the deck. Occupants kept off until dry.",2,3],
+      ["Splinters and raised nails","Operatives",3,2,"Gloves worn. Raised fixings reported or knocked down.",1,2],
+      ["Damage to timber from excess pressure","Property",3,3,"Low pressure, wide fan nozzle and surface cleaner held at the correct distance. Test area first.",1,3]
+    ],
+    steps:["Clear furniture and pots; sweep debris from boards and gaps.","Apply cleaner or brightener at the stated dilution; allow dwell time.","Clean along the grain with low pressure or surface cleaner.","Rinse thoroughly and leave to dry before any treatment."]},
+  steam:{n:"Hot water & steam cleaning",d:"Hot water or superheated steam for gum, graffiti, algae and sensitive stone.",
+    ppe:["goggles","gloves_heat","boots","suit","ear","hivis"],
+    equip:["Hot water / steam pressure washer (diesel burner)","Insulated lance and hoses","Barriers and signage"],
+    haz:[
+      ["Burns and scalds from hot water and steam (up to 150°C)","Operatives, public",3,4,"Trained operatives only. Insulated lance and heat-resistant gloves. Never pointed at people. Thermostat and safety valves checked before use.",1,4],
+      ["Diesel burner fuel, exhaust fumes and fire","Operatives, public",2,4,"Burner run outdoors only. Refuel with burner off and cool. Fire extinguisher and spill kit on vehicle.",1,4],
+      ["Public in busy or commercial areas","Public",3,3,"Barriers, signs and hi-vis. Work paused when people approach. Out-of-hours working where practical.",1,3]
+    ],
+    steps:["Set up barriers, signs and exclusion zone.","Check burner, thermostat, hoses and lance before lighting.","Test temperature and pressure on a small area.","Clean systematically and collect run-off.","Allow equipment to cool before packing away."]}
+};
+
+const ACCESS = {
+  ground:{n:"Ground level only",haz:null},
+  pole:{n:"Water-fed / telescopic pole from ground",haz:null},
+  ladder:{n:"Ladders / stepladders",haz:["Falls from ladders and stepladders","Operatives",3,5,"Ladder use justified as short-duration, low-risk work. BS EN 131 ladders, pre-use checked and tagged. Firm level base, 1-in-4 angle, footed or tied. Three points of contact. Ladder training (e.g. Ladder Association).",1,5],train:"Ladder Association or equivalent ladder training"},
+  tower:{n:"Mobile access tower",haz:["Tower collapse, overturning or falls from platform","Operatives, public",2,5,"Erected by PASMA-trained operatives to the manufacturer's instructions. Outriggers and castor brakes set. Guardrails and toe boards fitted. Inspected after erection and every 7 days, with tag. Not moved with anyone on it.",1,5],train:"PASMA (mobile access towers)",ppe:["helmet"]},
+  mewp:{n:"MEWP / cherry picker",haz:["MEWP overturning, entrapment or fall from basket","Operatives, public",2,5,"IPAF-trained operator. Ground conditions checked; spreader plates used. Harness with short restraint lanyard clipped to the anchor. Rescue plan in place and a ground person trained in emergency lowering. Exclusion zone around the machine. Wind speed within the manufacturer's limit.",1,5],train:"IPAF (MEWP operator, PAL card)",ppe:["harness","helmet"]},
+  roofladder:{n:"Roof ladder / crawling boards",haz:["Falls from roof slope or through roof covering","Operatives",3,5,"Roof ladder hooked securely over the ridge. Used only for short work with edge protection or a specific plan. Fragile surfaces never crossed.",1,5],train:"Working at height training"},
+  scaffold:{n:"Scaffold (erected by others)",haz:["Falls from scaffold or falling materials","Operatives, public",2,5,"Scaffold erected by a competent (CISRS) contractor with handover certificate. Inspected before use and every 7 days. No alterations by our operatives. Debris netting and brick guards in place.",1,5],train:"Scaffold user awareness"}
+};
+
+const SITE = {
+  powerlines:{n:"Overhead power lines or cables",h:["Contact with overhead power lines","Operatives",2,5,"Lines identified before start. No poles, ladders or MEWPs within safe distance (HSE GS6). DNO contacted if work must be closer.",1,5]},
+  public:{n:"Members of the public / pedestrians",h:["Members of the public entering the work area","Public",3,3,"Barriers, signs and an exclusion zone. Spraying paused when people pass. Hoses never left across footpaths.",1,3]},
+  children:{n:"Children or pets at the property",h:["Children or pets near chemicals and equipment","Occupants, children, animals",3,3,"Occupier asked to keep children and pets indoors. Chemicals never left unattended and kept locked in the vehicle.",1,3]},
+  vehicles:{n:"Vehicles / roadside working",h:["Struck by vehicles; work near the highway","Operatives, public, road users",3,4,"Hi-vis worn. Vehicle parked safely with beacons. Work kept off the carriageway; Chapter 8 traffic management where needed.",1,4],ppe:["hivis"]},
+  fragile:{n:"Fragile roofs or rooflights nearby",h:["Falling through fragile surfaces","Operatives",2,5,"Fragile surfaces identified, marked and never stepped on or used to support ladders.",1,5]},
+  asbestos:{n:"Building built before 2000 (possible asbestos)",h:["Disturbing asbestos-containing materials (cement roofs, soffits, panels)","Operatives, occupants, public",2,5,"Client asked for any asbestos survey. Suspected asbestos cement is not pressure washed, scraped or drilled. Work stops and specialist advice is taken if materials are suspected.",1,5]},
+  electrics:{n:"External electrics (sockets, lights, cameras)",h:["Water or chemicals entering external electrical fittings","Operatives, occupants",2,4,"Fittings identified and covered. Spray not directed at them. Client told before work.",1,4]},
+  weather:{n:"Exposed site or changeable weather",h:["Adverse weather: wind, rain, ice, heat, lightning","Operatives, public",3,3,"Forecast checked. Spraying stopped above about 15 mph wind; MEWP and towers within manufacturer limits. Work stopped for ice or lightning. Sun protection and water in hot weather.",1,3]},
+  lone:{n:"Lone working",h:["Lone working: accident with no one to help","Operatives",2,4,"Lone working procedure with check-in calls. Charged mobile phone carried. High-risk tasks (MEWP, ladders) not done alone.",1,4]},
+  wildlife:{n:"Nesting birds, wasps or bees",h:["Disturbing nests; stings","Operatives, wildlife",2,3,"Area checked before start. Work near active bird nests stopped (Wildlife and Countryside Act 1981). Wasp nests left for pest control.",1,3]},
+  drains:{n:"Surface water drains or watercourse nearby",h:["Pollution of drains and watercourses","Environment",3,4,"Gullies covered or blocked. Drain socks and mats used. Run-off collected. Nothing discharged to surface water drains.",1,4]},
+  access:{n:"Restricted access or uneven ground",h:["Trips and falls on uneven ground and restricted access routes","Operatives",3,3,"Access route walked first. Kept clear and tidy. Hoses routed safely. Adequate lighting.",1,3]},
+  occupied:{n:"Occupied premises / business open",h:["Occupants, staff or customers affected by work","Occupants, staff, customers",3,3,"Work agreed with the site contact. Entrances kept clear or alternatives signed. Work phased or done out of hours where needed.",1,3]}
+};
+
+const CHEMS = {
+  hypo:{n:"Sodium hypochlorite (≤15%)",use:"Biocide / organic stain removal for soft washing render, roofs and hard surfaces",
+    cls:"Skin Corr. 1B (H314) · Eye Dam. 1 · Aquatic Acute 1 (H400) · EUH031 (contact with acids liberates toxic gas)",
+    ghs:["corrosive","env"], ppe:["goggles","gloves_chem","suit","boots","resp"],
+    routes:"Skin, eyes, inhalation of mist",
+    ctrl:"Use lowest effective concentration. Mix in open air, adding chemical to water. Never mix with acids, ammonia or other cleaners. Dedicated, labelled equipment. Pre-wet and post-rinse plants. Prevent run-off to drains.",
+    fa:"Eyes: rinse with clean water for at least 15 minutes, remove contact lenses, get medical help. Skin: remove contaminated clothing, rinse with plenty of water. Inhaled: move to fresh air and rest. Swallowed: rinse mouth, do not induce vomiting, call 111 or 999.",
+    store:"Upright in labelled, vented original containers, out of sunlight and away from acids. Secured in vehicle. Strength degrades over time; rotate stock.",
+    spill:"Contain with absorbent from spill kit. Keep out of drains. Report significant spills to the Environment Agency incident line 0800 80 70 60."},
+  quat:{n:"Quaternary ammonium biocide (benzalkonium chloride)",use:"Moss, algae and lichen treatment on roofs, walls and hard surfaces",
+    cls:"Concentrate: Skin Corr. 1B (H314) · Acute Tox. 4 (H302) · Aquatic Acute 1 (H400). Use as approved under GB biocide rules and to the label.",
+    ghs:["corrosive","harmful","env"], ppe:["goggles","gloves_chem","suit","boots"],
+    routes:"Skin, eyes, ingestion",
+    ctrl:"Follow the product label and approval conditions. Dilute to label rate. Low-pressure application. Do not apply before rain or near ponds and watercourses.",
+    fa:"Eyes: rinse for at least 15 minutes and get medical help. Skin: wash with plenty of water. Swallowed: rinse mouth, do not induce vomiting, get medical help.",
+    store:"Labelled original container, frost-free, secured in vehicle, away from food.",
+    spill:"Absorb with inert material, bag and dispose of as hazardous waste. Prevent entry to drains."},
+  surf:{n:"Surfactant / detergent (pH neutral to mild)",use:"General cleaning, window cleaning, soft wash additive",
+    cls:"Typically Eye Irrit. 2 (H319) · Skin Irrit. 2 (H315)", ghs:["harmful"], ppe:["glasses","gloves_chem"],
+    routes:"Skin, eyes",
+    ctrl:"Dilute as directed. Avoid splashes. Rinse surfaces after use.",
+    fa:"Eyes: rinse with water for several minutes. Skin: wash with water. Swallowed: rinse mouth and drink water.",
+    store:"Labelled container, closed when not in use.", spill:"Absorb small spills and rinse area with water, away from drains."},
+  caustic:{n:"Sodium hydroxide degreaser (alkaline)",use:"Oil, grease and traffic film removal from hard surfaces",
+    cls:"Skin Corr. 1A (H314) · Met. Corr. 1 (H290)", ghs:["corrosive"], ppe:["goggles","gloves_chem","suit","boots"],
+    routes:"Skin, eyes, inhalation of mist",
+    ctrl:"Dilute as directed, chemical to water. Never mix with acids. Low-pressure application. Neutralise and rinse thoroughly.",
+    fa:"Eyes: rinse immediately for at least 15 minutes, get urgent medical help. Skin: remove clothing, rinse for at least 15 minutes. Swallowed: rinse mouth, do not induce vomiting, call 999.",
+    store:"Labelled original container, away from acids and aluminium.", spill:"Contain with spill kit absorbent. Prevent entry to drains."},
+  oxalic:{n:"Oxalic acid (stain remover / timber brightener)",use:"Rust, tannin and iron stains; decking brightener",
+    cls:"Acute Tox. 4 (H302 + H312) · Eye Dam. 1 (H318)", ghs:["corrosive","harmful"], ppe:["goggles","gloves_chem","boots"],
+    routes:"Skin, eyes, ingestion, dust when mixing",
+    ctrl:"Mix powder outdoors avoiding dust. Never mix with hypochlorite. Rinse treated area thoroughly.",
+    fa:"Eyes: rinse for at least 15 minutes, get medical help. Skin: wash with water. Swallowed: rinse mouth, get medical help.",
+    store:"Dry, sealed, labelled container away from oxidisers.", spill:"Sweep up powder without raising dust; absorb liquid. Keep out of drains."},
+  acid:{n:"Hydrochloric acid based brick / patio cleaner",use:"Cement, mortar and efflorescence removal",
+    cls:"Skin Corr. 1B (H314) · STOT SE 3 (H335) · Met. Corr. 1 (H290)", ghs:["corrosive","harmful"], ppe:["goggles","gloves_chem","suit","boots","resp"],
+    routes:"Skin, eyes, inhalation of fumes",
+    ctrl:"Pre-wet surface. Dilute as directed, acid to water. NEVER use with or near hypochlorite (chlorine gas). Protect metals and stone sensitive to acid. Neutralise and rinse thoroughly.",
+    fa:"Eyes: rinse immediately for at least 15 minutes, get urgent medical help. Skin: rinse for at least 15 minutes. Inhaled: fresh air, get medical help if breathing is affected. Swallowed: rinse mouth, do not induce vomiting, call 999.",
+    store:"Labelled, vented container, separate from hypochlorite and alkalis.", spill:"Neutralise with soda ash and absorb; prevent entry to drains."},
+  perc:{n:"Sodium percarbonate (oxygen bleach)",use:"Timber, decking and fence cleaning; organic stains",
+    cls:"Ox. Sol. 3 (H272) · Acute Tox. 4 (H302) · Eye Dam. 1 (H318)", ghs:["oxidiser","corrosive","harmful"], ppe:["goggles","gloves_chem","boots"],
+    routes:"Eyes, skin, ingestion, dust",
+    ctrl:"Dissolve in water outdoors, avoiding dust. Keep away from combustibles and fuel. Use mixed solution promptly; do not seal containers of mixed solution.",
+    fa:"Eyes: rinse for at least 15 minutes, get medical help. Skin: wash with water. Swallowed: rinse mouth, drink water, get medical help.",
+    store:"Dry, cool, labelled container away from combustibles and fuel.", spill:"Sweep up dry; dilute residues with plenty of water away from drains."},
+  fuel:{n:"Petrol / diesel (machine fuel)",use:"Fuel for pressure washers, pumps and burners",
+    cls:"Petrol: Flam. Liq. 1 (H224) · Asp. Tox. 1 (H304) · Carc. 1B · Aquatic Chronic 2. Diesel: Flam. Liq. 3 (H226) · Asp. Tox. 1.", ghs:["flame","health","env"], ppe:["gloves_chem"],
+    routes:"Skin, inhalation of vapour, ingestion",
+    ctrl:"Approved, labelled fuel cans. Refuel with engine off and cool, outdoors. No smoking or naked flames. Fire extinguisher and spill kit on vehicle.",
+    fa:"Skin: wash with soap and water. Inhaled: fresh air. Swallowed: do not induce vomiting, call 999 (aspiration hazard).",
+    store:"Approved containers within legal limits, ventilated and secured in vehicle.", spill:"Contain with absorbent pads; keep out of drains; dispose of as hazardous waste."},
+  pure:{n:"Purified water (RO / DI)",use:"Window, frame and solar panel cleaning",
+    cls:"Not classified as hazardous", ghs:[], ppe:[],
+    routes:"None significant", ctrl:"No chemical controls required. Resin and filters disposed of as directed by the supplier.",
+    fa:"None required.", store:"N/A", spill:"N/A"}
+};
+
+const COSHH_X = {
+  hypo:{wel:"Chlorine (released on contact with acids): 0.5 ppm, 15-min STEL (EH40)",form:"Liquid, applied as spray",
+    health:"Short term: severe burns to skin and eyes; mist irritates nose, throat and lungs. Long term: irritant contact dermatitis from repeated skin contact.",
+    surv:"Skin surveillance: operatives check hands and forearms for dryness, redness or cracking; responsible person reviews periodically and refers to occupational health if symptoms appear.",
+    disp:"Small residues diluted heavily and directed to foul sewer only with the water company's consent. Empty containers triple-rinsed and recycled or disposed of by a licensed waste carrier.",
+    fire:"Not flammable. Releases chlorine gas in fire or with acids. Use extinguishing media suitable for surrounding fire; cool containers with water.",risk:[4,4,2,3]},
+  quat:{wel:"No UK workplace exposure limit assigned",form:"Liquid concentrate, diluted and sprayed",
+    health:"Short term: burns from concentrate; irritation from diluted solution; harmful if swallowed. Long term: dermatitis from repeated contact.",
+    surv:"Skin surveillance for dermatitis (self-checks and periodic review by responsible person).",
+    disp:"Unused product and rinsings disposed of as hazardous waste through a licensed carrier. Never to surface water drains.",
+    fire:"Not flammable. May give off toxic fumes in fire. Use media suitable for surrounding fire.",risk:[3,4,1,3]},
+  surf:{wel:"No UK workplace exposure limit assigned",form:"Liquid, diluted",
+    health:"Short term: eye and skin irritation. Long term: dermatitis from prolonged wet work.",
+    surv:"Skin checks for wet-work dermatitis (self-checks and periodic review).",
+    disp:"Diluted residues to foul sewer with consent; containers rinsed and recycled.",fire:"Not flammable.",risk:[3,2,1,2]},
+  caustic:{wel:"Sodium hydroxide: 2 mg/m³, 15-min STEL (EH40)",form:"Liquid, diluted and sprayed",
+    health:"Short term: severe burns to skin and eyes, possible permanent eye damage; mist irritates airways. Long term: dermatitis.",
+    surv:"Skin surveillance for dermatitis. Any eye splash treated as a medical emergency.",
+    disp:"Neutralise residues before disposal; hazardous waste through a licensed carrier.",
+    fire:"Not flammable. Reacts with aluminium, zinc and tin to release flammable hydrogen.",risk:[3,5,1,4]},
+  oxalic:{wel:"Oxalic acid: 1 mg/m³ 8-hr TWA, 2 mg/m³ 15-min STEL (EH40)",form:"Powder mixed into solution",
+    health:"Short term: serious eye damage; harmful by skin contact or if swallowed; dust irritates airways. Long term: possible kidney effects from repeated ingestion.",
+    surv:"Skin surveillance for dermatitis. Not otherwise required at normal trade use levels.",
+    disp:"Hazardous waste through licensed carrier; do not discharge to drains.",fire:"Combustible solid; emits irritating fumes in fire.",risk:[3,4,1,3]},
+  acid:{wel:"Hydrogen chloride: 1 ppm 8-hr TWA, 5 ppm 15-min STEL (EH40)",form:"Liquid, diluted and brushed or sprayed",
+    health:"Short term: severe burns to skin and eyes; fumes irritate nose, throat and lungs. Long term: dental erosion and respiratory irritation from repeated vapour exposure.",
+    surv:"Skin surveillance for dermatitis. Report any breathing symptoms to the responsible person.",
+    disp:"Neutralise with soda ash before disposal; hazardous waste through licensed carrier.",
+    fire:"Not flammable. Reacts with metals releasing flammable hydrogen; with hypochlorite releases chlorine gas.",risk:[3,5,1,4]},
+  perc:{wel:"Hydrogen peroxide (released in solution): 1 ppm 8-hr TWA, 2 ppm 15-min STEL (EH40)",form:"Granules dissolved in water",
+    health:"Short term: serious eye damage; harmful if swallowed; dust irritates airways. Long term: dermatitis.",
+    surv:"Skin surveillance for dermatitis.",
+    disp:"Dilute spent solution heavily; to foul sewer only with consent. Never mix residues with fuel or organic waste.",
+    fire:"Oxidiser: may intensify fire. Keep away from combustibles. Use plenty of water.",risk:[3,4,1,3]},
+  fuel:{wel:"Benzene (in petrol): 1 ppm 8-hr TWA (EH40)",form:"Liquid, decanted into machines",
+    health:"Short term: skin irritation, dizziness from vapour; aspiration into lungs if swallowed can be fatal. Long term: petrol contains benzene, which may cause cancer; dermatitis.",
+    surv:"Not required for occasional refuelling. Skin checks for dermatitis.",
+    disp:"Contaminated absorbents and old fuel disposed of as hazardous waste through a licensed carrier.",
+    fire:"Highly flammable. Use foam, dry powder or CO₂; never a water jet. No smoking or ignition sources within 6 m when refuelling.",risk:[2,4,1,4]},
+  pure:{wel:"Not applicable",form:"Liquid",health:"No health effects.",surv:"Not required.",disp:"Exhausted resin returned to supplier or disposed of as directed.",fire:"Not applicable.",risk:[1,1,1,1]}
+};
+const CUSTOM_X={wel:"See section 8 of the safety data sheet",form:"See safety data sheet",health:"See section 11 of the safety data sheet.",surv:"Review the SDS and assess whether skin or respiratory surveillance is needed.",disp:"See section 13 of the safety data sheet.",fire:"See section 5 of the safety data sheet.",risk:[3,3,1,3]};
+const GHS = {
+  corrosive:{t:"Corrosive",c:"GHS05"}, harmful:{t:"Irritant / harmful",c:"GHS07"}, env:{t:"Environment",c:"GHS09"},
+  flame:{t:"Flammable",c:"GHS02"}, oxidiser:{t:"Oxidiser",c:"GHS03"}, health:{t:"Health hazard",c:"GHS08"}, toxic:{t:"Toxic",c:"GHS06"}
+};
+const GHS_GLYPH = {
+  corrosive:'<path d="M14 14h6l-1 4h-4zM24 14h6l-1 4h-4z" fill="#000"/><path d="M16 20l-2 4M27 20l-1 3" stroke="#000" stroke-width="1.6"/><rect x="11" y="27" width="10" height="3" fill="#000"/><path d="M24 30h9l-2-3h-6z" fill="#000"/>',
+  harmful:'<rect x="20.5" y="11" width="3" height="13" rx="1" fill="#000"/><circle cx="22" cy="29" r="2" fill="#000"/>',
+  env:'<path d="M12 30h20" stroke="#000" stroke-width="1.5"/><path d="M14 30V18l3 3M17 30v-9" stroke="#000" stroke-width="1.5" fill="none"/><ellipse cx="25" cy="26" rx="5" ry="2.6" fill="#000"/><path d="M30 26l3-2v4z" fill="#000"/>',
+  flame:'<path d="M22 11c3 4 6 7 6 11a6 6 0 0 1-12 0c0-3 2-4 2-7 1 2 2 3 3 3 0-3 0-5 1-7z" fill="#000"/><rect x="14" y="29" width="16" height="2" fill="#000"/>',
+  oxidiser:'<circle cx="22" cy="26" r="5" fill="none" stroke="#000" stroke-width="2"/><path d="M22 10c2 3 4 5 4 8a4 4 0 0 1-8 0c0-2 2-4 4-8z" fill="#000"/><rect x="14" y="32" width="16" height="2" fill="#000"/>',
+  health:'<circle cx="22" cy="14" r="3" fill="#000"/><path d="M17 18h10v4l-5 3-5-3z" fill="#000"/><path d="M22 23l4 3-4 6-4-6z" fill="#fff" stroke="#000" stroke-width="1.3"/>',
+  toxic:'<circle cx="22" cy="18" r="5" fill="#000"/><path d="M14 26l16 6M30 26l-16 6" stroke="#000" stroke-width="2"/>'
+};
+
+const LEGIS = [
+  "Health and Safety at Work etc. Act 1974","Management of Health and Safety at Work Regulations 1999","Work at Height Regulations 2005",
+  "Control of Substances Hazardous to Health Regulations 2002 (COSHH, as amended)","Personal Protective Equipment at Work Regulations 1992 (as amended 2022)",
+  "Provision and Use of Work Equipment Regulations 1998 (PUWER)","Manual Handling Operations Regulations 1992","Control of Noise at Work Regulations 2005",
+  "Control of Vibration at Work Regulations 2005","Electricity at Work Regulations 1989","Reporting of Injuries, Diseases and Dangerous Occurrences Regulations 2013 (RIDDOR)",
+  "Control of Asbestos Regulations 2012","Environmental Permitting (England and Wales) Regulations 2016 and Water Resources Act 1991","Health and Safety (First-Aid) Regulations 1981"
+];
+
+/* ================= State ================= */
+function today(off=0){const d=new Date();d.setDate(d.getDate()+off);return d.toISOString().slice(0,10)}
+function blankCompany(){return{name:"",address:"",phone:"",email:"",insurer:"",cover:"",logo:"",assessor:"",position:""}}
+function blankJob(){return{
+  ref:"", rev:"1", client:"", siteAddress:"", siteContact:"", contactPhone:"", start:today(1), duration:"1 day", hours:"08:00 – 17:00",
+  scope:"", methods:[], access:["ground"], chems:[], site:[], custom:[], operatives:"2",
+  firstAider:"", hospital:"", hospitalAddr:"", welfare:"Client's facilities by agreement; otherwise portable welfare and hand-wash station on vehicle.",
+  water:"Client mains supply via backflow-protected connection", waste:"Debris bagged and removed to licensed waste site; slurry collected where required.",
+  assessDate:today(), reviewDate:today(365), notes:"", extraEquip:""}}
+function exampleState(){
+  const company={name:"Brightside Exterior Cleaning Ltd",address:"Unit 4, Mill Lane Industrial Estate, Leeds LS12 3AB",phone:"0113 496 0000",email:"office@example.co.uk",insurer:"Public liability insurer",cover:"£5,000,000 public liability",logo:"",assessor:"Sam Taylor",position:"Director"};
+  const job=Object.assign(blankJob(),{
+    ref:"BEC-2026-0142",client:"Mrs J. Patel",siteAddress:"12 Oakwood Drive, Harrogate HG2 7QP",siteContact:"Mrs J. Patel (homeowner)",contactPhone:"07700 900123",
+    duration:"2 days",scope:"Clean block-paved driveway (approx. 85 m²) and rear patio, re-sand joints. Soft wash front and side render elevations (two-storey detached house). Vacuum and flush gutters and downpipes all round.",
+    methods:["pressure","softwash","gutter"],access:["ground","pole"],
+    chems:[{id:"hypo",product:"Example: SH 12.5% sodium hypochlorite",dil:"3% working strength on render",app:"Low-pressure soft wash pump, 10 min dwell",supplier:"Example supplier",sds:"Rev 3, Jan 2026",qty:"10 L concentrate",freq:"Up to 3 hrs on day 1"},{id:"surf",product:"Example: soft wash surfactant",dil:"0.5% in hypochlorite mix",app:"Added to soft wash mix"},{id:"fuel",product:"Unleaded petrol",dil:"Neat",app:"Pressure washer fuel"}],
+    site:["public","children","electrics","drains","weather"],
+    custom:[{h:"Ornamental pond next to rear patio",who:"Environment, wildlife",l:3,s:3,c:"Pond covered with sheeting before cleaning. No chemicals used within 3 m. Run-off directed away from pond.",rl:1,rs:3}],
+    firstAider:"Sam Taylor (First Aid at Work)",hospital:"Harrogate District Hospital A&E",hospitalAddr:"Lancaster Park Road, Harrogate HG2 7SX",
+  });
+  return {company,job,example:true,docType:"rams"};
+}
+
+const LS = {get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+let S = (()=>{const d=LS.get("rams.draft");const c=LS.get("rams.company");
+  if(d&&d.job){d.job=Object.assign(blankJob(),d.job);d.company=Object.assign(blankCompany(),c||d.company||{});return d}
+  const ex=exampleState(); if(c&&c.name){ex.company=Object.assign(blankCompany(),c)} return ex})();
+
+let saveTimer=null;
+function persist(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{LS.set("rams.draft",S);LS.set("rams.company",S.company)},400)}
+
+/* ================= Helpers ================= */
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nl=v=>esc(v).replace(/\n/g,"<br>");
+function rating(l,s){const r=l*s;return r<=4?["Low","r-low",r]:r<=12?["Medium","r-med",r]:["High","r-high",r]}
+function rateCell(l,s){const[t,c,r]=rating(l,s);return `<span class="rate ${c}">${r} ${t}</span>`}
+function fmtDate(d){if(!d)return "";const x=new Date(d+"T00:00:00");return isNaN(x)?esc(d):x.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3200)}
+function autoRef(){const j=S.job;const ini=(S.company.name||"RAMS").split(/\s+/).filter(Boolean).map(w=>w[0]).join("").slice(0,3).toUpperCase()||"RA";return `${ini}-${(j.start||today()).replace(/-/g,"").slice(2)}-${String(Math.floor(Math.random()*900)+100)}`}
+
+/* ================= Form ================= */
+function field(path,label,opts={}){
+  const [obj,key]=path.split(".");const v=S[obj][key]??"";const id="f_"+obj+"_"+key;
+  const t=opts.type||"text";
+  const input=t==="textarea"?`<textarea id="${id}" data-path="${path}" rows="${opts.rows||3}" placeholder="${esc(opts.ph||"")}">${esc(v)}</textarea>`
+    :`<input id="${id}" data-path="${path}" type="${t}" value="${esc(v)}" placeholder="${esc(opts.ph||"")}">`;
+  return `<div class="field ${opts.cls||""}"><label for="${id}">${label}</label>${input}</div>`;
+}
+function checkList(listKey,src,descFn){
+  return `<div class="checks">${Object.entries(src).map(([k,o])=>{const on=S.job[listKey].includes(k);
+    return `<label class="check ${on?"on":""}"><input type="checkbox" data-list="${listKey}" value="${k}" ${on?"checked":""}><div><b>${esc(o.n)}</b>${descFn?`<span>${esc(descFn(o))}</span>`:""}</div></label>`}).join("")}</div>`;
+}
+function sec(n,title,body,count,open){return `<details class="sec" ${open?"open":""} data-sec="${n}"><summary><span class="n">${String(n).padStart(2,"0")}</span><h2>${title}</h2>${count!=null?`<span class="count">${count}</span>`:""}</summary><div class="secbody">${body}</div></details>`}
+
+let openSecs=new Set([1,2,3]);
+function renderForm(){
+  const j=S.job,c=S.company;
+  const chemCards=j.chems.map((ch,i)=>{const ref=CHEMS[ch.id];const name=ref?ref.n:(ch.name||"Custom chemical");
+    return `<div class="chemcard"><header><b>${esc(name)}</b><button class="btn small danger" type="button" data-rmchem="${i}">Remove</button></header>
+      ${ref?"":`<div class="field"><label for="ch_${i}_name">Chemical name</label><input id="ch_${i}_name" data-chem="${i}" data-k="name" value="${esc(ch.name||"")}"></div>
+      <div class="field"><label for="ch_${i}_haz">Hazard classification (from the SDS)</label><input id="ch_${i}_haz" data-chem="${i}" data-k="cls" value="${esc(ch.cls||"")}" placeholder="e.g. Skin Corr. 1B (H314), Aquatic Acute 1"></div>`}
+      <div class="field"><label for="ch_${i}_p">Product / trade name</label><input id="ch_${i}_p" data-chem="${i}" data-k="product" value="${esc(ch.product||"")}"></div>
+      <div class="grid2"><div class="field"><label for="ch_${i}_d">Dilution</label><input id="ch_${i}_d" data-chem="${i}" data-k="dil" value="${esc(ch.dil||"")}" placeholder="e.g. 1:10, 3%"></div>
+      <div class="field"><label for="ch_${i}_a">How it's applied</label><input id="ch_${i}_a" data-chem="${i}" data-k="app" value="${esc(ch.app||"")}" placeholder="e.g. low-pressure sprayer"></div></div>
+      <div class="grid2"><div class="field"><label for="ch_${i}_s">Supplier</label><input id="ch_${i}_s" data-chem="${i}" data-k="supplier" value="${esc(ch.supplier||"")}"></div>
+      <div class="field"><label for="ch_${i}_sds">SDS date / revision</label><input id="ch_${i}_sds" data-chem="${i}" data-k="sds" value="${esc(ch.sds||"")}" placeholder="e.g. Rev 4, Mar 2025"></div></div>
+      <div class="grid2"><div class="field"><label for="ch_${i}_q">Amount used per job</label><input id="ch_${i}_q" data-chem="${i}" data-k="qty" value="${esc(ch.qty||"")}" placeholder="e.g. 5 L concentrate"></div>
+      <div class="field"><label for="ch_${i}_fq">Exposure time</label><input id="ch_${i}_fq" data-chem="${i}" data-k="freq" value="${esc(ch.freq||"")}" placeholder="e.g. up to 2 hrs a day"></div></div></div>`}).join("");
+  const customs=j.custom.map((h,i)=>`<div class="customhaz">
+      <div class="field"><label for="cu_${i}_h">Hazard</label><input id="cu_${i}_h" data-cust="${i}" data-k="h" value="${esc(h.h)}"></div>
+      <div class="field"><label for="cu_${i}_w">Who might be harmed</label><input id="cu_${i}_w" data-cust="${i}" data-k="who" value="${esc(h.who)}"></div>
+      <div class="field"><label for="cu_${i}_c">Control measures</label><textarea id="cu_${i}_c" data-cust="${i}" data-k="c" rows="3">${esc(h.c)}</textarea></div>
+      <div class="lsrow">${["l","s","rl","rs"].map(k=>`<div class="field"><label for="cu_${i}_${k}">${{l:"Likelihood",s:"Severity",rl:"Resid. L",rs:"Resid. S"}[k]}</label><select id="cu_${i}_${k}" data-cust="${i}" data-k="${k}">${[1,2,3,4,5].map(n=>`<option ${h[k]==n?"selected":""}>${n}</option>`).join("")}</select></div>`).join("")}
+      <button class="btn small danger" type="button" data-rmcust="${i}">Remove</button></div></div>`).join("");
+  const jobs=LS.get("rams.jobs")||[];
+  const html=
+  (S.example?`<div class="notice"><p><b>Example job loaded.</b> Change any field and the RAMS updates as you type, or start a blank job.</p><button class="btn small" type="button" id="exClear">Start blank</button></div>`:"")+
+  sec(1,"Your business",`
+    <div class="grid2">${field("company.name","Company name")}${field("company.phone","Phone")}</div>
+    ${field("company.address","Address")}
+    <div class="grid2">${field("company.email","Email")}${field("company.cover","Insurance cover",{ph:"e.g. £5m public liability"})}</div>
+    <div class="grid2">${field("company.assessor","Assessed by")}${field("company.position","Position")}</div>
+    <div class="field"><span class="lbl">Logo</span><div class="logoPrev">${c.logo?`<img src="${c.logo}" alt="Company logo">`:""}<label class="btn small" for="logoIn">${c.logo?"Change logo":"Upload logo"}</label><input id="logoIn" type="file" accept="image/*" hidden>${c.logo?`<button class="btn small danger" type="button" id="logoRm">Remove</button>`:""}</div></div>
+    <p class="hint">Business details are remembered on this device for every new job.</p>`,null,openSecs.has(1))+
+  sec(2,"Job & site",`
+    <div class="grid2">${field("job.ref","RAMS reference")}${field("job.rev","Revision")}</div>
+    ${field("job.client","Client")}
+    ${field("job.siteAddress","Site address")}
+    <div class="grid2">${field("job.siteContact","Site contact")}${field("job.contactPhone","Contact phone")}</div>
+    <div class="grid2">${field("job.start","Start date",{type:"date"})}${field("job.duration","Duration")}</div>
+    <div class="grid2">${field("job.hours","Working hours")}${field("job.operatives","Number of operatives")}</div>
+    ${field("job.scope","Scope of works",{type:"textarea",rows:4,ph:"What are you cleaning, where, and how big?"})}`,null,openSecs.has(2))+
+  sec(3,"Cleaning methods",`<p class="hint">Tick every method used on this job. Hazards, PPE, equipment and the work sequence are added for you.</p>${checkList("methods",METHODS,o=>o.d)}`,j.methods.length+" selected",openSecs.has(3))+
+  sec(4,"Access equipment",checkList("access",ACCESS),j.access.length+" selected",openSecs.has(4))+
+  sec(5,"Chemicals",`${chemCards||`<p class="hint">No chemicals added yet.</p>`}
+    <div class="row-add"><select id="chemPick" aria-label="Chemical to add"><option value="">Add a chemical…</option>${Object.entries(CHEMS).map(([k,o])=>`<option value="${k}">${esc(o.n)}</option>`).join("")}<option value="custom">Other (enter from SDS)</option></select><button class="btn small" type="button" id="chemAdd">Add</button></div>
+    <p class="hint">Always check the classification against your product's safety data sheet. Switch the preview to “COSHH assessment” for the full standalone document.</p>`,j.chems.length+" added",openSecs.has(5))+
+  sec(6,"Site hazards",checkList("site",SITE),j.site.length+" selected",openSecs.has(6))+
+  sec(7,"Extra hazards",`<p class="hint">Anything specific to this site that isn't covered above. Ratings are 1 (low) to 5 (high).</p>${customs}<button class="btn small" type="button" id="custAdd">Add a hazard</button>`,j.custom.length||null,openSecs.has(7))+
+  sec(8,"Emergency, welfare & sign-off",`
+    ${field("job.firstAider","First aider")}
+    <div class="grid2">${field("job.hospital","Nearest A&E")}${field("job.hospitalAddr","A&E address")}</div>
+    ${field("job.water","Water supply")}
+    ${field("job.welfare","Welfare facilities",{type:"textarea",rows:2})}
+    ${field("job.waste","Waste & run-off",{type:"textarea",rows:2})}
+    ${field("job.extraEquip","Other equipment (one per line)",{type:"textarea",rows:2})}
+    ${field("job.notes","Additional notes",{type:"textarea",rows:2})}
+    <div class="grid2">${field("job.assessDate","Assessment date",{type:"date"})}${field("job.reviewDate","Review date",{type:"date"})}</div>`,null,openSecs.has(8))+
+  sec(9,"Saved jobs",`${jobs.length?`<div class="joblist">${jobs.map((jb,i)=>`<div class="jobitem"><div><b>${esc(jb.job.client||"Untitled")} · ${esc(jb.job.ref||"")}</b><small>${esc(jb.job.siteAddress||"")} · saved ${esc(new Date(jb.saved).toLocaleDateString("en-GB"))}</small></div><button class="btn small" type="button" data-load="${i}">Open</button><button class="btn small danger" type="button" data-del="${i}">${delArm===i?"Confirm":"Delete"}</button></div>`).join("")}</div>`:`<p class="hint">Saved jobs appear here. Use “Save job” at the top. They're stored in this browser only.</p>`}
+    <div class="row-add"><button class="btn small" type="button" id="expJson">Download job file</button><label class="btn small" for="impJson">Open job file</label><input id="impJson" type="file" accept=".json,application/json" hidden></div>
+    <p class="hint">Job files let you back up a RAMS or move it to another device.</p>`,jobs.length||null,openSecs.has(9));
+  const f=$("#form");const st=f.scrollTop;f.innerHTML=html;f.scrollTop=st;
+}
+let delArm=-1;
+
+function setPath(path,val){const [o,k]=path.split(".");S[o][k]=val}
+function changed(rerenderForm){S.example=S.example&&false;persist();renderDoc();if(rerenderForm)renderForm()}
+
+document.addEventListener("toggle",e=>{const d=e.target;if(d.matches&&d.matches("details.sec")){const n=+d.dataset.sec;d.open?openSecs.add(n):openSecs.delete(n)}},true);
+
+$("#form").addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.path){setPath(t.dataset.path,t.value);return changed(false)}
+  if(t.dataset.chem!=null){S.job.chems[+t.dataset.chem][t.dataset.k]=t.value;return changed(false)}
+  if(t.dataset.cust!=null){const k=t.dataset.k;S.job.custom[+t.dataset.cust][k]=["l","s","rl","rs"].includes(k)?+t.value:t.value;return changed(false)}
+});
+$("#form").addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.list){const arr=S.job[t.dataset.list];const i=arr.indexOf(t.value);if(t.checked&&i<0)arr.push(t.value);if(!t.checked&&i>=0)arr.splice(i,1);return changed(true)}
+  if(t.id==="logoIn"&&t.files[0]){const fr=new FileReader();fr.onload=()=>shrinkImage(fr.result).then(u=>{S.company.logo=u;changed(true)});fr.readAsDataURL(t.files[0])}
+  if(t.id==="impJson"&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.job)throw 0;S={docType:S.docType,company:Object.assign(blankCompany(),d.company||S.company),job:Object.assign(blankJob(),d.job)};changed(true);toast("Job opened")}catch(err){toast("That file isn't a RAMS Builder job file")}};fr.readAsText(t.files[0])}
+});
+$("#form").addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.id==="exClear"){S={docType:S.docType,company:S.company.name==="Brightside Exterior Cleaning Ltd"?blankCompany():S.company,job:blankJob()};S.job.ref=autoRef();openSecs=new Set([1,2]);changed(true);return}
+  if(t.dataset.rmchem!=null){S.job.chems.splice(+t.dataset.rmchem,1);return changed(true)}
+  if(t.id==="chemAdd"){const v=$("#chemPick").value;if(!v)return toast("Choose a chemical from the list first");
+    if(v!=="custom"&&S.job.chems.some(c=>c.id===v))return toast("That chemical is already added");
+    S.job.chems.push({id:v,product:"",dil:"",app:"",name:"",cls:""});openSecs.add(5);return changed(true)}
+  if(t.id==="custAdd"){S.job.custom.push({h:"",who:"Operatives",l:3,s:3,c:"",rl:1,rs:3});openSecs.add(7);return changed(true)}
+  if(t.dataset.rmcust!=null){S.job.custom.splice(+t.dataset.rmcust,1);return changed(true)}
+  if(t.id==="logoRm"){S.company.logo="";return changed(true)}
+  if(t.dataset.load!=null){const jb=(LS.get("rams.jobs")||[])[+t.dataset.load];if(jb){S={docType:S.docType,company:Object.assign(blankCompany(),jb.company),job:Object.assign(blankJob(),jb.job)};changed(true);toast("Job opened")}return}
+  if(t.dataset.del!=null){const i=+t.dataset.del;if(delArm!==i){delArm=i;renderForm();setTimeout(()=>{if(delArm===i){delArm=-1;renderForm()}},4000);return}
+    const jobs=LS.get("rams.jobs")||[];jobs.splice(i,1);LS.set("rams.jobs",jobs);delArm=-1;renderForm();toast("Job deleted");return}
+  if(t.id==="expJson"){saveFile(fileBase()+".json",JSON.stringify({app:"rams-builder",version:1,company:S.company,job:S.job},null,2));return}
+});
+
+function shrinkImage(url){return new Promise(res=>{const im=new Image();im.onload=()=>{const max=360;const k=Math.min(1,max/Math.max(im.width,im.height));const cv=document.createElement("canvas");cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);res(cv.toDataURL("image/png"))};im.onerror=()=>res(url);im.src=url})}
+
+/* ================= Document ================= */
+function collect(){
+  const j=S.job;const ms=j.methods.map(k=>METHODS[k]).filter(Boolean);
+  const rows=[];const ppe=new Set();const equip=[];const train=new Set(["Induction and toolbox talk on this RAMS","COSHH awareness for the chemicals listed","Manual handling","Emergency first aid at work (at least one person on site)"]);
+  ms.forEach(m=>{m.haz.forEach(h=>rows.push({grp:m.n,h}));m.ppe.forEach(p=>ppe.add(p));m.equip.forEach(e=>equip.includes(e)||equip.push(e))});
+  if(j.methods.includes("pressure")||j.methods.includes("steam"))train.add("Pressure washer safe use (manufacturer / trade body training)");
+  if(j.methods.includes("softwash")||j.chems.length)train.add("Soft washing and chemical handling");
+  j.access.forEach(k=>{const a=ACCESS[k];if(!a)return;if(a.haz)rows.push({grp:"Access equipment",h:a.haz});if(a.train)train.add(a.train);(a.ppe||[]).forEach(p=>ppe.add(p));if(k!=="ground"&&!equip.includes(a.n))equip.push(a.n)});
+  j.site.forEach(k=>{const s=SITE[k];if(!s)return;rows.push({grp:"Site conditions",h:s.h});(s.ppe||[]).forEach(p=>ppe.add(p))});
+  j.chems.forEach(c=>{const r=CHEMS[c.id];if(r)r.ppe.forEach(p=>ppe.add(p))});
+  if(j.chems.some(c=>c.id!=="pure"&&c.id!=="fuel")){rows.push({grp:"Chemicals",h:["Exposure to hazardous substances (see COSHH assessments)","Operatives, public, occupants",3,4,"Substances assessed in Section 6. Lowest-hazard product and lowest effective dilution used. PPE worn. Containers labelled and secured. Eyewash and water on vehicle.",1,4]});
+    if(!j.site.includes("drains"))rows.push({grp:"Chemicals",h:["Chemical run-off to drains and watercourses","Environment",3,4,"Gullies covered or blocked. Drain socks used. Run-off collected or contained. Nothing discharged to surface water drains.",1,4]})}
+  j.custom.filter(h=>h.h).forEach(h=>rows.push({grp:"Site-specific",h:[h.h,h.who,h.l,h.s,h.c,h.rl,h.rs]}));
+  if(!rows.length)rows.push({grp:"General",h:["Slips, trips and falls around the work area","Operatives, public",3,3,"Good housekeeping. Hoses and equipment kept tidy. Suitable footwear.",1,3]});
+  (j.extraEquip||"").split("\n").map(s=>s.trim()).filter(Boolean).forEach(e=>equip.push(e));
+  ["First aid kit and eyewash","Spill kit and drain covers","Barriers, cones and signage","Fire extinguisher (on vehicle)"].forEach(e=>equip.push(e));
+  ppe.add("boots");
+  if(j.methods.some(k=>METHODS[k]?.wah)||j.access.some(k=>!["ground","pole"].includes(k)))train.add("Work at height awareness");
+  return{ms,rows,ppe:[...ppe],equip,train:[...train]};
+}
+
+function ghsSvg(k){return `<svg viewBox="0 0 44 44" aria-hidden="true"><rect x="7" y="7" width="30" height="30" transform="rotate(45 22 22)" fill="#fff" stroke="#d1121b" stroke-width="3.4"/>${GHS_GLYPH[k]||""}</svg>`}
+
+function renderDoc(){(S.docType==="coshh"?renderCoshh:renderRams)();document.querySelectorAll("#dtRams,#dtCoshh").forEach(b=>b.setAttribute("aria-pressed",(b.id==="dtCoshh")===(S.docType==="coshh")))}
+function chemInfo(ch){const r=CHEMS[ch.id]||{n:ch.name||"Custom chemical",use:"",cls:ch.cls||"See safety data sheet",ghs:[],ppe:[],routes:"See SDS",ctrl:"Follow the controls in sections 7 and 8 of the product safety data sheet.",fa:"See section 4 of the safety data sheet.",store:"See section 7 of the safety data sheet.",spill:"See section 6 of the safety data sheet."};return{ch,r,x:COSHH_X[ch.id]||CUSTOM_X}}
+function renderRams(){
+  const c=S.company,j=S.job;const {ms,rows,ppe,equip,train}=collect();let n=0;const H=t=>`<h2><span class="sn">${String(++n).padStart(2,"0")}</span>${t}</h2>`;
+  const highest=rows.reduce((m,r)=>Math.max(m,r.h[2]*r.h[3]),0);const highestR=rows.reduce((m,r)=>Math.max(m,r.h[5]*r.h[6]),0);
+  const groups=[];rows.forEach(r=>{let g=groups.find(x=>x.n===r.grp);if(!g)groups.push(g={n:r.grp,rows:[]});g.rows.push(r.h)});
+  const wahUsed=ms.some(m=>m.wah)||j.access.some(k=>!["ground","pole"].includes(k));
+  const chemRows=j.chems.map(chemInfo);
+
+  const html=`
+  <div class="dhead">
+    <div class="co">${c.logo?`<img src="${c.logo}" alt="">`:""}<div><div class="coname">${esc(c.name||"Your company name")}</div><div class="codet">${esc(c.address)}${c.address&&(c.phone||c.email)?"<br>":""}${esc([c.phone,c.email].filter(Boolean).join(" · "))}${c.cover?`<br>${esc(c.cover)}`:""}</div></div></div>
+    <div class="dtitle"><h1>Risk Assessment &amp;<br>Method Statement</h1><div class="sub">${esc(ms.map(m=>m.n).join(" · ")||"Exterior cleaning works")}</div><div class="ref">${esc(j.ref||"REF —")} · Rev ${esc(j.rev||"1")}</div></div>
+  </div>
+
+  ${H("Project details")}
+  <table class="kv"><tbody>
+    <tr><th>Client</th><td>${esc(j.client)}</td></tr>
+    <tr><th>Site address</th><td>${esc(j.siteAddress)}</td></tr>
+    <tr><th>Site contact</th><td>${esc([j.siteContact,j.contactPhone].filter(Boolean).join(" · "))}</td></tr>
+    <tr><th>Start date / duration</th><td>${fmtDate(j.start)}${j.duration?` · ${esc(j.duration)}`:""}</td></tr>
+    <tr><th>Working hours</th><td>${esc(j.hours)}</td></tr>
+    <tr><th>Operatives on site</th><td>${esc(j.operatives)}</td></tr>
+    <tr><th>Prepared by</th><td>${esc([c.assessor,c.position].filter(Boolean).join(", "))}${j.assessDate?` · ${fmtDate(j.assessDate)}`:""}</td></tr>
+    <tr><th>Review date</th><td>${fmtDate(j.reviewDate)} or sooner if the work, site or people change</td></tr>
+  </tbody></table>
+
+  ${H("Scope of works")}
+  <p>${nl(j.scope)||'<span class="muted">Describe the works to be carried out.</span>'}</p>
+  ${ms.length?`<table><thead><tr><th style="width:30%">Method</th><th>Description</th></tr></thead><tbody>${ms.map(m=>`<tr><td><b>${esc(m.n)}</b></td><td>${esc(m.d)}</td></tr>`).join("")}</tbody></table>`:""}
+  <p><b>Access:</b> ${esc(j.access.map(k=>ACCESS[k]?.n).filter(Boolean).join(", ")||"Ground level only")}</p>
+
+  ${H("Method statement: sequence of works")}
+  <h3>Before work starts</h3>
+  <ol>
+    <li>Arrive, report to the site contact and confirm the scope, access and any changes since the survey.</li>
+    <li>Brief all operatives on this RAMS (toolbox talk) and record signatures in Section 12.</li>
+    <li>Carry out a dynamic risk assessment: weather, overhead lines, drains, electrics, people and pets. Stop and review if conditions differ from this document.</li>
+    <li>Park and unload safely; set out barriers, cones and signs to create an exclusion zone.</li>
+    <li>Identify water supply (${esc(j.water||"to be confirmed")}), drains and gullies; cover drains and external electrics; protect plants, vehicles and glazing.</li>
+    <li>Check all equipment before use (hoses, couplings, lances, ladders, poles, PPE).</li>
+  </ol>
+  ${ms.map(m=>`<div class="keep"><h3>${esc(m.n)}</h3><ol>${m.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div>`).join("")}
+  <h3>On completion</h3>
+  <ol>
+    <li>Rinse down all treated and surrounding areas; check plants, glazing and vehicles for residue.</li>
+    <li>Remove drain covers once run-off is cleared; collect and remove waste. ${esc(j.waste)}</li>
+    <li>Clean and pack equipment; return chemicals to secure storage on the vehicle.</li>
+    <li>Walk round with the client, record any issues and remove barriers and signs last.</li>
+  </ol>
+
+  ${H("Risk rating method")}
+  <div class="matrix keep">
+    <table><thead><tr><th>L × S</th>${[1,2,3,4,5].map(s=>`<th>${s}</th>`).join("")}</tr></thead><tbody>${[5,4,3,2,1].map(l=>`<tr><th>${l}</th>${[1,2,3,4,5].map(s=>{const[,cl,r]=rating(l,s);return `<td class="${cl}" style="font-weight:700">${r}</td>`}).join("")}</tr>`).join("")}</tbody></table>
+    <div style="flex:1;min-width:260px">
+      <p><b>Likelihood (L):</b> 1 Rare · 2 Unlikely · 3 Possible · 4 Likely · 5 Almost certain</p>
+      <p><b>Severity (S):</b> 1 Minor injury · 2 First aid · 3 Lost time / RIDDOR · 4 Major injury · 5 Fatality / multiple</p>
+      <p><span class="rate r-low">1–4 Low</span> acceptable, monitor &nbsp; <span class="rate r-med">5–12 Medium</span> controls must be in place &nbsp; <span class="rate r-high">15–25 High</span> do not start until reduced</p>
+      <p class="muted">Highest risk before controls: ${rateCell(...(()=>{const r=rows.find(r=>r.h[2]*r.h[3]===highest).h;return[r[2],r[3]]})())} · highest residual: ${rateCell(...(()=>{const r=rows.find(r=>r.h[5]*r.h[6]===highestR).h;return[r[5],r[6]]})())}</p>
+    </div>
+  </div>
+
+  ${H("Risk assessment")}
+  <table class="ra"><thead><tr><th style="width:22%">Hazard</th><th style="width:13%">Who may be harmed</th><th style="width:11%">Initial risk</th><th>Control measures</th><th style="width:11%">Residual risk</th></tr></thead>
+  <tbody>${groups.map(g=>`<tr><td colspan="5" style="background:#f6f9fa;font-weight:700;color:#0a6a85;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em">${esc(g.n)}</td></tr>${g.rows.map(h=>`<tr><td>${esc(h[0])}</td><td>${esc(h[1])}</td><td class="c">${rateCell(h[2],h[3])}<br><span class="muted">L${h[2]} × S${h[3]}</span></td><td>${nl(h[4])}</td><td class="c">${rateCell(h[5],h[6])}<br><span class="muted">L${h[5]} × S${h[6]}</span></td></tr>`).join("")}`).join("")}</tbody></table>
+
+  ${H("COSHH assessments")}
+  ${chemRows.length?chemRows.map(({ch,r})=>`<div class="coshh keep">
+    <div class="coshh-h"><div><h3>${esc(r.n)}</h3>${ch.product?`<div class="muted">Product: ${esc(ch.product)}</div>`:""}</div>
+    ${r.ghs.length?`<div class="ghs">${r.ghs.map(g=>`<figure>${ghsSvg(g)}<figcaption>${GHS[g].t}<br>${GHS[g].c}</figcaption></figure>`).join("")}</div>`:""}</div>
+    <table class="kv"><tbody>
+      ${r.use?`<tr><th>Used for</th><td>${esc(r.use)}</td></tr>`:""}
+      <tr><th>Dilution / application</th><td>${esc([ch.dil,ch.app].filter(Boolean).join(" · ")||"As manufacturer's instructions")}</td></tr>
+      <tr><th>Classification</th><td>${esc(r.cls)}</td></tr>
+      <tr><th>Routes of exposure</th><td>${esc(r.routes)}</td></tr>
+      <tr><th>Controls</th><td>${esc(r.ctrl)}</td></tr>
+      <tr><th>PPE</th><td>${r.ppe.length?r.ppe.map(p=>`<span class="tag">${esc(PPE[p].n)}</span>`).join(""):"None required"}</td></tr>
+      <tr><th>First aid</th><td>${esc(r.fa)}</td></tr>
+      <tr><th>Storage &amp; transport</th><td>${esc(r.store)}</td></tr>
+      <tr><th>Spillage</th><td>${esc(r.spill)}</td></tr>
+    </tbody></table></div>`).join("")+`<p class="muted">Safety data sheets for every product are carried on the vehicle and available on request. Classifications shown are typical; the supplier's SDS takes precedence. A full COSHH assessment for these substances is issued with this RAMS.</p>`
+  :`<p class="muted">No hazardous substances are used for this work.</p>`}
+
+  ${H("Personal protective equipment")}
+  <table><thead><tr><th>PPE</th><th style="width:38%">Standard</th></tr></thead><tbody>${ppe.map(p=>`<tr><td>${esc(PPE[p].n)}</td><td>${esc(PPE[p].s)}</td></tr>`).join("")}</tbody></table>
+  <p>PPE is issued free of charge, checked before use, and replaced when damaged. It is the last line of defence after the controls above.</p>
+
+  ${H("Plant & equipment")}
+  <ul class="twocol">${equip.map(e=>`<li>${esc(e)}</li>`).join("")}</ul>
+  <p>All equipment is maintained in line with PUWER 1998; portable electrical equipment is PAT tested and used with RCD protection.${wahUsed?" Access equipment is inspected before each use and records kept.":""}</p>
+
+  ${H("Environmental controls")}
+  <ul>
+    <li>Only rainwater may go to surface water drains. Wash water, slurry and chemicals are kept out of them by covering gullies and using drain socks or mats.</li>
+    <li>Run-off is directed to foul drains (with permission) or soakaway areas, or collected for disposal.</li>
+    <li>Plants and lawns are pre-wet and rinsed after chemical use.</li>
+    <li>${esc(j.waste)}</li>
+    <li>Pollution incidents are reported to the Environment Agency on 0800 80 70 60 (Natural Resources Wales / SEPA where applicable).</li>
+  </ul>
+
+  ${H("Emergency procedures & welfare")}
+  <table class="kv"><tbody>
+    <tr><th>Emergency services</th><td><b>999 / 112</b></td></tr>
+    <tr><th>First aider</th><td>${esc(j.firstAider)}</td></tr>
+    <tr><th>Nearest A&amp;E</th><td>${esc([j.hospital,j.hospitalAddr].filter(Boolean).join(", "))}</td></tr>
+    <tr><th>Company contact</th><td>${esc([c.assessor,c.phone].filter(Boolean).join(" · "))}</td></tr>
+    <tr><th>Welfare</th><td>${esc(j.welfare)}</td></tr>
+  </tbody></table>
+  <ul>
+    <li><b>Injury:</b> stop work, make the area safe, give first aid and call 999 if needed. Report to the office the same day.</li>
+    <li><b>Chemical in eyes or on skin:</b> rinse with clean water for at least 15 minutes and follow the first aid in Section 6. Take the SDS to hospital.</li>
+    <li><b>Spill:</b> stop the source, use the spill kit and protect drains. Report to the Environment Agency if it reaches a drain or watercourse.</li>
+    ${wahUsed?`<li><b>Fall or person stranded at height:</b> call 999, do not move a casualty with suspected spinal injury. Follow the rescue plan for the access equipment in use.</li>`:""}
+    <li><b>Fire:</b> raise the alarm, evacuate, call 999. Only tackle small fires with the extinguisher if safe.</li>
+    <li>Accidents and near misses are recorded in the accident book and reported under RIDDOR 2013 where required.</li>
+  </ul>
+
+  ${H("Training & competence")}
+  <ul class="twocol">${train.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>
+  <p>Operatives are supervised until competent. Training records are held by ${esc(c.name||"the company")}.</p>
+  ${j.notes?`<div class="callout"><b>Additional notes:</b> ${nl(j.notes)}</div>`:""}
+
+  ${H("Legislation & guidance")}
+  <ul class="twocol">${LEGIS.map(l=>`<li>${esc(l)}</li>`).join("")}</ul>
+
+  <div class="keep">
+  ${H("Briefing record & sign-off")}
+  <p>I confirm I have read or been briefed on this RAMS, understand it, and will follow it. I will stop work and report if conditions change.</p>
+  <table class="sign"><thead><tr><th style="width:34%">Name</th><th style="width:30%">Signature</th><th>Company</th><th style="width:15%">Date</th></tr></thead><tbody>${Array.from({length:Math.max(4,+j.operatives||0)}).map(()=>"<tr><td></td><td></td><td></td><td></td></tr>").join("")}</tbody></table>
+  <table class="kv"><tbody><tr><th>Assessed by</th><td>${esc([c.assessor,c.position].filter(Boolean).join(", "))}</td></tr><tr><th>Signature / date</th><td style="height:34px">${j.assessDate?fmtDate(j.assessDate):""}</td></tr><tr><th>Accepted by client</th><td style="height:34px"></td></tr></tbody></table>
+  </div>
+  <div class="foot"><span>${esc(c.name)} · ${esc(j.ref)} Rev ${esc(j.rev)}</span><span>Printed copies are uncontrolled. Review on ${fmtDate(j.reviewDate)}.</span></div>`;
+  $("#doc").innerHTML=html;
+  fitPaper();
+}
+
+function renderCoshh(){
+  const c=S.company,j=S.job;let n=0;const H=t=>`<h2><span class="sn">${String(++n).padStart(2,"0")}</span>${t}</h2>`;
+  const items=j.chems.map(chemInfo);const people=`${esc(j.operatives||"")} operative(s); occupants and public nearby (low exposure, controlled by exclusion zone)`;
+  const ppeAll=[...new Set(items.flatMap(i=>i.r.ppe))];
+  const html=`
+  <div class="dhead">
+    <div class="co">${c.logo?`<img src="${c.logo}" alt="">`:""}<div><div class="coname">${esc(c.name||"Your company name")}</div><div class="codet">${esc(c.address)}${c.address&&(c.phone||c.email)?"<br>":""}${esc([c.phone,c.email].filter(Boolean).join(" · "))}</div></div></div>
+    <div class="dtitle"><h1>COSHH<br>Assessment</h1><div class="sub">Control of Substances Hazardous to Health Regulations 2002 (as amended)</div><div class="ref">${esc(j.ref?j.ref+"-C":"REF —")} · Rev ${esc(j.rev||"1")}</div></div>
+  </div>
+
+  ${H("Assessment details")}
+  <table class="kv"><tbody>
+    <tr><th>Activity</th><td>Exterior cleaning${j.methods.length?": "+esc(j.methods.map(k=>METHODS[k]?.n).filter(Boolean).join(", ")):""}</td></tr>
+    <tr><th>Client / site</th><td>${esc([j.client,j.siteAddress].filter(Boolean).join(", "))}</td></tr>
+    <tr><th>Related RAMS</th><td>${esc(j.ref||"")} Rev ${esc(j.rev||"1")}</td></tr>
+    <tr><th>Persons at risk</th><td>${people}</td></tr>
+    <tr><th>Assessed by</th><td>${esc([c.assessor,c.position].filter(Boolean).join(", "))}${j.assessDate?` · ${fmtDate(j.assessDate)}`:""}</td></tr>
+    <tr><th>Review date</th><td>${fmtDate(j.reviewDate)}, or sooner if a product, method or SDS changes, or after any incident or ill-health report</td></tr>
+  </tbody></table>
+
+  ${H("Substance register")}
+  ${items.length?`<table><thead><tr><th>Substance / product</th><th style="width:22%">Used for</th><th style="width:18%">Dilution</th><th style="width:13%">Risk before</th><th style="width:13%">Residual risk</th></tr></thead><tbody>
+  ${items.map(({ch,r,x})=>`<tr><td><b>${esc(r.n)}</b>${ch.product?`<br><span class="muted">${esc(ch.product)}</span>`:""}</td><td>${esc(r.use||ch.app||"")}</td><td>${esc(ch.dil||"As label")}</td><td class="c">${rateCell(x.risk[0],x.risk[1])}</td><td class="c">${rateCell(x.risk[2],x.risk[3])}</td></tr>`).join("")}</tbody></table>`
+  :`<p class="muted">Add chemicals in section 05 of the form to build the assessment.</p>`}
+
+  ${items.map(({ch,r,x},i)=>`<div class="coshh">
+    <div class="coshh-h"><div><h3>${i+1}. ${esc(r.n)}</h3><div class="muted">${esc([ch.product&&"Product: "+ch.product,ch.supplier&&"Supplier: "+ch.supplier,ch.sds&&"SDS: "+ch.sds].filter(Boolean).join(" · ")||"Product details: see SDS")}</div></div>
+    ${r.ghs.length?`<div class="ghs">${r.ghs.map(g=>`<figure>${ghsSvg(g)}<figcaption>${GHS[g].t}<br>${GHS[g].c}</figcaption></figure>`).join("")}</div>`:""}</div>
+    <table class="kv"><tbody>
+      <tr><th colspan="2" style="background:#0d2a35;color:#fff;text-transform:uppercase;letter-spacing:.05em;font-size:10px">Hazard identification</th></tr>
+      <tr><th>Classification</th><td>${esc(r.cls)}</td></tr>
+      <tr><th>Physical form</th><td>${esc(x.form)}</td></tr>
+      <tr><th>Workplace exposure limit</th><td>${esc(x.wel)}</td></tr>
+      <tr><th>Health effects</th><td>${esc(x.health)}</td></tr>
+      <tr><th colspan="2" style="background:#0d2a35;color:#fff;text-transform:uppercase;letter-spacing:.05em;font-size:10px">Exposure</th></tr>
+      <tr><th>Task</th><td>${esc([r.use,ch.app].filter(Boolean).join(". ")||"See RAMS")}</td></tr>
+      <tr><th>Dilution / amount</th><td>${esc([ch.dil&&"Dilution: "+ch.dil,ch.qty&&"Amount per job: "+ch.qty].filter(Boolean).join(" · ")||"As manufacturer's instructions")}</td></tr>
+      <tr><th>Duration / frequency</th><td>${esc(ch.freq||"Intermittent during the job")}</td></tr>
+      <tr><th>Routes of exposure</th><td>${esc(r.routes)}</td></tr>
+      <tr><th>Persons exposed</th><td>${people}</td></tr>
+      <tr><th>Risk before controls</th><td>${rateCell(x.risk[0],x.risk[1])} <span class="muted">L${x.risk[0]} × S${x.risk[1]}</span></td></tr>
+      <tr><th colspan="2" style="background:#0d2a35;color:#fff;text-transform:uppercase;letter-spacing:.05em;font-size:10px">Control measures</th></tr>
+      <tr><th>Elimination / substitution</th><td>${ch.id==="pure"?"Pure water used instead of chemicals.":"Considered at survey. Mechanical cleaning or pure water used where they achieve the result; lowest-hazard product and lowest effective concentration used where a chemical is needed."}</td></tr>
+      <tr><th>Engineering &amp; procedures</th><td>${esc(r.ctrl)}</td></tr>
+      <tr><th>PPE &amp; RPE</th><td>${r.ppe.length?r.ppe.map(p=>`<span class="tag">${esc(PPE[p].n)} · ${esc(PPE[p].s)}</span>`).join(""):"None required"}</td></tr>
+      <tr><th>Residual risk</th><td>${rateCell(x.risk[2],x.risk[3])} <span class="muted">L${x.risk[2]} × S${x.risk[3]}</span></td></tr>
+      <tr><th colspan="2" style="background:#0d2a35;color:#fff;text-transform:uppercase;letter-spacing:.05em;font-size:10px">Storage, emergencies &amp; health</th></tr>
+      <tr><th>Storage &amp; transport</th><td>${esc(r.store)}</td></tr>
+      <tr><th>Spillage</th><td>${esc(r.spill)}</td></tr>
+      <tr><th>Fire</th><td>${esc(x.fire)}</td></tr>
+      <tr><th>First aid</th><td>${esc(r.fa)}</td></tr>
+      <tr><th>Waste &amp; disposal</th><td>${esc(x.disp)}</td></tr>
+      <tr><th>Health surveillance</th><td>${esc(x.surv)}</td></tr>
+    </tbody></table></div>`).join("")}
+
+  ${H("Incompatibilities")}
+  ${items.some(i=>i.ch.id==="hypo")&&items.some(i=>["acid","oxalic"].includes(i.ch.id))?`<div class="callout"><b>Warning:</b> this job uses sodium hypochlorite and an acid product. Mixing them releases toxic chlorine gas. Keep them in separate, labelled tanks and sprayers, flush equipment between products, and never apply one where the other is still wet.</div>`:""}
+  <ul><li>Products are never mixed unless the SDS directs it.</li><li>Each product has its own labelled tank, sprayer and measuring jug.</li><li>Hypochlorite is kept apart from acids, ammonia and fuel; oxidisers are kept away from fuel and combustibles.</li></ul>
+
+  ${H("Monitoring, training & records")}
+  <ul>
+    <li>Control measures and PPE are checked at the start of each job and defects reported.</li>
+    <li>RPE wearers are face-fit tested, and RPE is cleaned, inspected and stored correctly.</li>
+    <li>Operatives receive COSHH training on each product, including reading the SDS and label, mixing, PPE and emergency actions.</li>
+    <li>Health surveillance records are kept for 40 years where required by COSHH Regulation 11.</li>
+    <li>Current safety data sheets for every product are carried on the vehicle.</li>
+    <li>Ill-health such as dermatitis or breathing problems is reported and, where reportable, notified under RIDDOR 2013.</li>
+  </ul>
+  ${ppeAll.length?`<p><b>PPE issued for this work:</b> ${ppeAll.map(p=>`<span class="tag">${esc(PPE[p].n)}</span>`).join("")}</p>`:""}
+
+  <div class="keep">
+  ${H("Acknowledgement")}
+  <p>I have read this COSHH assessment and the safety data sheets for the products listed, and I understand the controls, PPE and emergency actions.</p>
+  <table class="sign"><thead><tr><th style="width:34%">Name</th><th style="width:30%">Signature</th><th>Company</th><th style="width:15%">Date</th></tr></thead><tbody>${Array.from({length:Math.max(4,+j.operatives||0)}).map(()=>"<tr><td></td><td></td><td></td><td></td></tr>").join("")}</tbody></table>
+  <table class="kv"><tbody><tr><th>Assessor signature / date</th><td style="height:34px">${j.assessDate?fmtDate(j.assessDate):""}</td></tr></tbody></table>
+  </div>
+  <div class="foot"><span>${esc(c.name)} · COSHH ${esc(j.ref)} Rev ${esc(j.rev)}</span><span>Read alongside the product SDS. Review on ${fmtDate(j.reviewDate)}.</span></div>`;
+  $("#doc").innerHTML=html;fitPaper();
+}
+function setDocType(t){S.docType=t;persist();renderDoc()}
+document.getElementById("dtRams").addEventListener("click",()=>setDocType("rams"));
+document.getElementById("dtCoshh").addEventListener("click",()=>setDocType("coshh"));
+
+function fitPaper(){const w=$("#previewWrap").clientWidth-32;const sc=$("#scaler");const k=Math.min(1,w/794);
+  if(k<1){sc.style.transform=`scale(${k})`;sc.style.height=($("#doc").offsetHeight*k)+"px";sc.style.margin="0"}else{sc.style.transform="";sc.style.height="";sc.style.margin="0 auto"}}
+window.addEventListener("resize",fitPaper);
+
+/* ================= Files ================= */
+function fileBase(){return ((S.docType==="coshh"?"COSHH ":"RAMS ")+[S.job.ref,S.job.client||S.job.siteAddress].filter(Boolean).join(" ")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g," ").trim().slice(0,90)||"RAMS"}
+let dlPromise=null;
+function STANDALONE_OK(){return !(window.claude&&window.claude.use)}
+function downloads(){if(!dlPromise)dlPromise=(window.claude&&window.claude.use)?window.claude.use("downloads"):Promise.resolve(null);return dlPromise}
+async function saveFile(name,data){
+  if(!STANDALONE_OK()){}else{
+    const blob=data instanceof Blob?data:new Blob([data],{type:name.endsWith(".json")?"application/json":"text/html"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("Downloaded "+name);return true}
+  const dl=await downloads().catch(()=>null);
+  if(!dl){toast("Downloads aren't available in this view");return false}
+  try{await dl.save({filename:name,data});toast("Saved "+name);return true}
+  catch(e){const c=e&&e.code;if(c==="declined")toast("Download cancelled");else if(c==="rate_limited")toast("A download prompt is already open");else toast("Couldn't save the file"+(c?` (${c})`:""));return false}
+}
+function docCss(){const out=[];for(const sh of document.styleSheets){try{for(const r of sh.cssRules){if(r.selectorText&&/\.doc\b/.test(r.selectorText))out.push(r.cssText)}}catch(e){}}return out.join("\n")}
+function standaloneHtml(){
+  return `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(fileBase())}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>body{margin:0;background:#e9eef0}${docCss()}
+.doc{margin:24px auto}
+.bar{max-width:794px;margin:16px auto 0;font:14px system-ui;color:#333}
+@page{size:A4;margin:12mm}
+@media print{body{background:#fff}.bar{display:none}.doc{margin:0;width:auto;box-shadow:none;padding:0}h2{break-after:avoid}}
+</style></head><body><p class="bar">Print this page (Ctrl+P / ⌘P) and choose “Save as PDF” for a clean A4 document.</p><div class="doc">${$("#doc").innerHTML}</div></body></html>`;
+}
+$("#btnHtml").addEventListener("click",()=>saveFile(fileBase()+".html",standaloneHtml()));
+$("#btnPdf").addEventListener("click",async e=>{
+  const b=e.currentTarget;
+  if(typeof html2pdf==="undefined"){toast("PDF tool didn't load. Use Download printable instead.");return}
+  b.disabled=true;const old=b.textContent;b.textContent="Building PDF…";
+  try{
+    const h=$("#doc").scrollHeight;const scale=Math.max(1,Math.min(2,30000/h));
+    const src=`<div class="doc pdf">${$("#doc").innerHTML}</div>`;
+    const blob=await html2pdf().set({margin:[12,12,14,12],image:{type:"jpeg",quality:0.92},
+      html2canvas:{scale,useCORS:true,backgroundColor:"#ffffff",scrollX:0,scrollY:0},
+      jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
+      pagebreak:{mode:["css","legacy"],avoid:["tr",".keep","h2","h3"]}}).from(src).outputPdf("blob");
+    await saveFile(fileBase()+".pdf",blob);
+  }catch(err){console.error(err);toast("Couldn't build the PDF. Try Download printable.")}
+  finally{b.disabled=false;b.textContent=old}
+});
+
+/* ================= Top bar ================= */
+let newArm=false;
+$("#btnNew").addEventListener("click",e=>{
+  const b=e.currentTarget;
+  if(!newArm){newArm=true;b.textContent="Clear this job?";b.classList.add("danger");setTimeout(()=>{newArm=false;b.textContent="New job";b.classList.remove("danger")},4000);return}
+  newArm=false;b.textContent="New job";b.classList.remove("danger");
+  S={docType:S.docType,company:S.example&&S.company.name==="Brightside Exterior Cleaning Ltd"?blankCompany():S.company,job:blankJob()};S.job.ref=autoRef();openSecs=new Set([1,2]);changed(true);toast("New job started");
+});
+$("#btnSave").addEventListener("click",()=>{
+  const jobs=LS.get("rams.jobs")||[];const i=jobs.findIndex(x=>x.job.ref&&x.job.ref===S.job.ref);
+  const entry={saved:Date.now(),company:S.company,job:JSON.parse(JSON.stringify(S.job))};
+  if(i>=0)jobs[i]=entry;else jobs.unshift(entry);
+  if(LS.set("rams.jobs",jobs.slice(0,60))){toast(i>=0?"Job updated":"Job saved");renderForm()}else toast("This browser won't let the page save. Use Download job file instead.");
+});
+function setView(v){$("#main").dataset.view=v;$("#tabEdit").setAttribute("aria-pressed",v==="edit");$("#tabPrev").setAttribute("aria-pressed",v==="preview");if(v==="preview")requestAnimationFrame(fitPaper)}
+$("#tabEdit").addEventListener("click",()=>setView("edit"));
+$("#tabPrev").addEventListener("click",()=>setView("preview"));
+
+if(STANDALONE_OK()){const bp=$("#btnPrint");bp.hidden=false;bp.addEventListener("click",()=>window.print())}
+renderForm();renderDoc();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitPaper);
+</script>
+
+</body>
+</html>
