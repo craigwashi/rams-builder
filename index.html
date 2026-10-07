@@ -68,6 +68,26 @@ button,input,select,textarea{font:inherit;color:inherit}
 .ok{background:var(--accent-soft);border-radius:8px;padding:9px 11px;font-size:14px}
 .acct-email{font-weight:700;overflow-wrap:anywhere}
 .cloudpill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 8px}
+.gate{min-height:100%;display:grid;place-items:center;color:var(--muted);font-weight:600}
+.home{min-height:100%;display:flex;flex-direction:column}
+.home-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;max-width:1120px;width:100%;margin:0 auto}
+.home-hero{flex:1;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,400px);gap:40px;align-items:start;max-width:1120px;width:100%;margin:0 auto;padding:32px 16px 40px}
+.home-hero h2{font:800 clamp(34px,5.4vw,60px)/.98 var(--f-display);font-stretch:78%;text-transform:uppercase;letter-spacing:.005em;margin:0 0 16px;text-wrap:balance}
+.home-hero h2 em{font-style:normal;color:var(--accent)}
+.home-lede{font-size:18px;line-height:1.5;max-width:56ch;color:var(--muted);margin:0 0 24px}
+.home-feats{list-style:none;padding:0;margin:0 0 26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.home-feats li{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.home-feats b{display:block;font:700 15px/1.25 var(--f-display);font-stretch:90%;margin-bottom:3px}
+.home-feats span{font-size:14px;color:var(--muted)}
+.home-methods{display:flex;flex-wrap:wrap;gap:6px}
+.home-methods span{font:500 12px var(--f-mono);border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);background:var(--panel)}
+.authcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 14px 40px rgba(0,0,0,.08);position:sticky;top:16px}
+.authcard header{display:flex;justify-content:space-between;align-items:center}
+.authcard h2{font:800 22px/1.1 var(--f-display);font-stretch:85%;margin:0;text-transform:uppercase}
+.authcard p{margin:0}
+.authcard .btn.primary{justify-content:center;padding:10px 12px}
+.home-foot{border-top:1px solid var(--line);padding:16px;font-size:13px;color:var(--muted);text-align:center}
+@media (max-width:860px){.home-hero{display:flex;flex-direction:column;gap:20px;padding-top:12px}.home-hero>div:first-child{display:contents}.home-hero h2,.home-lede,.home-feats{margin:0}.home-hero h2{order:1}.home-lede{order:2}.authcard{order:3;position:static}.home-feats{order:4}.home-methods{order:5}}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
 
 details.sec{background:var(--panel);border:1px solid var(--line);border-radius:10px}
@@ -195,7 +215,29 @@ details.sec>summary .count+*{margin-left:0}
 <body>
 
 
-<div class="app">
+<div class="gate" id="gateLoading" hidden>Loading…</div>
+<main class="home" id="home" hidden>
+  <div class="home-top">
+    <div class="brand"><svg class="brand-mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="7" fill="var(--accent)"/><path d="M17 6c4 5.2 7 9 7 12.6A7 7 0 0 1 10 18.6C10 15 13 11.2 17 6Z" fill="var(--accent-ink)"/><path d="M13.5 19.5l2.4 2.4 4.6-5" stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><div><h1>WashRAMS</h1><small>RAMS &amp; COSHH for exterior cleaners</small></div></div>
+    <button class="btn" type="button" data-home="signin">Log in</button>
+  </div>
+  <section class="home-hero">
+    <div>
+      <h2>Professional RAMS in <em>minutes</em>, not evenings.</h2>
+      <p class="home-lede">Tick the cleaning methods, access equipment and chemicals for the job. WashRAMS writes the risk assessment, method statement and COSHH assessment, ready to send to your client as a PDF.</p>
+      <ul class="home-feats">
+        <li><b>Risk assessment &amp; method statement</b><span>Hazards, 5×5 risk ratings, controls and a step-by-step sequence of works for every method.</span></li>
+        <li><b>Full COSHH assessments</b><span>Hazard symbols, EH40 exposure limits, PPE, first aid, storage and disposal for each chemical.</span></li>
+        <li><b>Your branding</b><span>Company details and logo on every page. Set them once and they're there for every job.</span></li>
+        <li><b>Saved to your account</b><span>Jobs and defaults stored securely and ready on your phone, tablet or laptop.</span></li>
+      </ul>
+      <div class="home-methods" aria-label="Methods covered"><span>Pressure washing</span><span>Soft washing</span><span>Roof cleaning</span><span>Gutter cleaning</span><span>Window cleaning</span><span>Conservatory roofs</span><span>Solar panels</span><span>Decking</span><span>Steam cleaning</span></div>
+    </div>
+    <div class="authcard" id="homeAuth"></div>
+  </section>
+  <footer class="home-foot">Free for exterior cleaning businesses. Generated documents must be checked by a competent person before use.</footer>
+</main>
+<div class="app" id="app">
   <header class="topbar">
     <div class="brand">
       <svg class="brand-mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="7" fill="var(--accent)"/><path d="M17 6c4 5.2 7 9 7 12.6A7 7 0 0 1 10 18.6C10 15 13 11.2 17 6Z" fill="var(--accent-ink)"/><path d="M13.5 19.5l2.4 2.4 4.6-5" stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -960,11 +1002,21 @@ const Cloud={
     if(!this.enabled)return;
     this.sb=window.supabase.createClient(CLOUD_CONFIG.url,CLOUD_CONFIG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
     const b=$("#btnAccount");b.hidden=false;b.addEventListener("click",()=>Account.open(this.user?"account":"signin"));
+    $("#app").hidden=true;$("#gateLoading").hidden=false;
+    let first=true;
     this.sb.auth.onAuthStateChange((ev,session)=>{
-      if(ev==="PASSWORD_RECOVERY"){Account.open("newpass")}
       const u=session?session.user:null;
-      if((u&&u.id)!==(this.user&&this.user.id))setTimeout(()=>this.setUser(u),0);
+      if(first){first=false;setTimeout(()=>{Gate.show(u);this.setUser(u)},0)}
+      else if((u&&u.id)!==(this.user&&this.user.id))setTimeout(()=>{Gate.show(u);this.setUser(u)},0);
+      if(ev==="PASSWORD_RECOVERY")setTimeout(()=>Account.open("newpass"),50);
     });
+    setTimeout(()=>{if(first){first=false;Gate.show(null)}},8000);
+  },
+  async signOut(){
+    if(this.profileTimer){clearTimeout(this.profileTimer);this.profileTimer=null;await this.sb.from("profiles").upsert({user_id:this.user.id,company:S.company,updated_at:new Date().toISOString()})}
+    await this.sb.auth.signOut();
+    ["rams.draft","rams.company","rams.defaults","rams.jobs"].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});
+    S=exampleState();openSecs=new Set([1,2,3]);Account.close();renderForm();renderDoc();toast("Signed out");
   },
   async setUser(u){
     this.user=u;const b=$("#btnAccount");b.textContent=u?"My account":"Sign in";b.classList.toggle("primary",false);
@@ -992,6 +1044,7 @@ const Cloud={
     if(!this.user||S.company.name===EXAMPLE_CO)return;
     clearTimeout(this.profileTimer);
     this.profileTimer=setTimeout(async()=>{
+      if(!this.user)return;
       const {error}=await this.sb.from("profiles").upsert({user_id:this.user.id,company:S.company,updated_at:new Date().toISOString()});
       if(error)toast("Couldn't save your company details to your account");else{this.lastSync=new Date();Account.refresh()}
     },1500);
@@ -1037,16 +1090,26 @@ const Cloud={
     const a=await this.sb.from("jobs").delete().eq("user_id",this.user.id);
     const b=await this.sb.from("profiles").delete().eq("user_id",this.user.id);
     if(a.error||b.error){Account.msg("Couldn't delete everything. Try again.",true);return}
-    await this.sb.auth.signOut();Account.close();toast("Your saved data has been deleted");
+    await this.signOut();toast("Your saved data has been deleted");
   }
 };
 
+const Gate={
+  show(u){
+    $("#gateLoading").hidden=true;
+    if(u){$("#home").hidden=true;$("#app").hidden=false;if(Account.host==="home"){Account.host="panel";$("#homeAuth").innerHTML=""}requestAnimationFrame(fitPaper)}
+    else{$("#app").hidden=true;$("#acctOverlay").hidden=true;$("#home").hidden=false;Account.host="home";if(!["signin","signup","forgot"].includes(Account.mode))Account.mode="signup";Account.note="";Account.render()}
+  }
+};
 const Account={
-  mode:"signin", armDelete:false, note:"", noteErr:false,
-  open(mode){this.mode=mode;this.note="";this.armDelete=false;$("#acctOverlay").hidden=false;this.render();const f=$("#acctPanel input");if(f)f.focus()},
-  close(){$("#acctOverlay").hidden=true},
-  refresh(){if(!$("#acctOverlay").hidden){if(Cloud.user&&["signin","signup"].includes(this.mode))this.mode="account";this.render()}},
-  msg(t,err){this.note=t;this.noteErr=!!err;const m=$("#acctMsg");if(m){m.textContent=t;m.className=err?"err":"ok";m.hidden=!t}},
+  mode:"signup", armDelete:false, note:"", noteErr:false,
+  host:"panel",
+  sel(){return this.host==="home"?"#homeAuth":"#acctPanel"},
+  q(x){return document.querySelector(this.sel()+" "+x)},
+  open(mode){this.host="panel";this.mode=mode;this.note="";this.armDelete=false;$("#acctOverlay").hidden=false;this.render();const f=this.q("input");if(f)f.focus()},
+  close(){$("#acctOverlay").hidden=true;if(this.host==="panel")$("#acctPanel").innerHTML=""},
+  refresh(){if(this.host==="home"||!$("#acctOverlay").hidden){if(Cloud.user&&["signin","signup","forgot"].includes(this.mode))this.mode="account";this.render()}},
+  msg(t,err){this.note=t;this.noteErr=!!err;const m=this.q("#acctMsg");if(m){m.textContent=t;m.className=err?"err":"ok";m.hidden=!t}},
   render(){
     const m=this.mode,u=Cloud.user;
     const titles={signin:"Sign in",signup:"Create account",forgot:"Reset password",newpass:"Choose a new password",account:"My account"};
@@ -1068,10 +1131,11 @@ const Account={
       <button class="btn" type="button" id="acChangePw">Change password</button>
       <button class="btn" type="button" id="acSignOut">Sign out</button>
       <button class="btn danger" type="button" id="acDelete">${this.armDelete?"Tap again to delete everything":"Delete my saved data"}</button>`:`<p>You're signed out.</p><button class="btn primary" type="button" data-mode="signin">Sign in</button>`;
-    $("#acctPanel").innerHTML=`<header><h2 id="acctTitle">${titles[m]}</h2><button class="x" type="button" id="acClose" aria-label="Close">×</button></header>${body}<p id="acctMsg" class="${this.noteErr?"err":"ok"}" ${this.note?"":"hidden"}>${esc(this.note)}</p>`;
+    if(this.host==="home"){titles.signin="Log in";titles.signup="Create your free account"}
+    document.querySelector(this.sel()).innerHTML=`<header><h2 id="acctTitle">${titles[m]}</h2>${this.host==="home"?"":`<button class="x" type="button" id="acClose" aria-label="Close">×</button>`}</header>${body}<p id="acctMsg" class="${this.noteErr?"err":"ok"}" ${this.note?"":"hidden"}>${esc(this.note)}</p>`;
   },
   async submit(){
-    const email=($("#acEmail")||{}).value?.trim();const pass=($("#acPass")||{}).value||"";const btn=$("#acForm button[type=submit]");
+    const email=(this.q("#acEmail")||{}).value?.trim();const pass=(this.q("#acPass")||{}).value||"";const btn=this.q("#acForm button[type=submit]");
     if(email)this.lastEmail=email;
     btn.disabled=true;this.msg("");
     try{
@@ -1092,15 +1156,18 @@ function friendlyAuthError(e){const t=(e&&e.message)||"";
   if(/rate|too many/i.test(t))return "Too many attempts. Wait a minute and try again.";
   if(/fetch|network/i.test(t))return "Can't reach the server. Check your connection.";
   return t||"Something went wrong. Try again.";}
-$("#acctOverlay").addEventListener("click",e=>{
+function acctClick(e){
   if(e.target.id==="acctOverlay"||e.target.id==="acClose")return Account.close();
   const b=e.target.closest("button");if(!b)return;
   if(b.dataset.mode){Account.mode=b.dataset.mode;Account.note="";Account.render();return}
-  if(b.id==="acSignOut"){Cloud.sb.auth.signOut().then(()=>{Account.close();toast("Signed out")});return}
+  if(b.id==="acSignOut"){Cloud.signOut();return}
   if(b.id==="acChangePw"){Account.mode="newpass";Account.note="";Account.render();return}
   if(b.id==="acDelete"){if(!Account.armDelete){Account.armDelete=true;Account.render();setTimeout(()=>{if(Account.armDelete){Account.armDelete=false;Account.render()}},4000);return}Cloud.deleteAllData()}
-});
+}
+$("#acctOverlay").addEventListener("click",acctClick);$("#homeAuth").addEventListener("click",acctClick);
 $("#acctOverlay").addEventListener("submit",e=>{e.preventDefault();Account.submit()});
+$("#homeAuth").addEventListener("submit",e=>{e.preventDefault();Account.submit()});
+document.querySelector('[data-home="signin"]').addEventListener("click",()=>{Account.host="home";Account.mode="signin";Account.note="";Account.render();const f=Account.q("input");if(f)f.focus()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#acctOverlay").hidden)Account.close()});
 
 /* ================= Top bar ================= */

@@ -17,4 +17,4 @@ Optional sign-in (Supabase) saves each user's company details, logo, default sit
 3. Put the project URL and publishable (anon) key in `CLOUD_CONFIG` near the bottom of `index.html`.
 4. In Authentication > URL Configuration, set the Site URL to `https://www.washrams.co.uk`.
 
-Until `CLOUD_CONFIG` is filled in, the account button stays hidden and everything is saved in the browser only.
+When accounts are configured, visitors see a home page with sign-up and log-in, and the RAMS builder only opens once they are signed in. Without `CLOUD_CONFIG` (or if Supabase fails to load) the builder opens directly and saves in the browser only.
