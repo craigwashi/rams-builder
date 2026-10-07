@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Free tool for exterior cleaners to build professional RAMS and COSHH assessments, ready to download as PDF.">
-<title>Exterior Cleaning RAMS Builder</title>
+<title>WashRAMS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
@@ -185,7 +185,7 @@ details.sec>summary .count+*{margin-left:0}
   <header class="topbar">
     <div class="brand">
       <svg class="brand-mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="7" fill="var(--accent)"/><path d="M17 6c4 5.2 7 9 7 12.6A7 7 0 0 1 10 18.6C10 15 13 11.2 17 6Z" fill="var(--accent-ink)"/><path d="M13.5 19.5l2.4 2.4 4.6-5" stroke="var(--accent)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div><h1>RAMS Builder</h1><small>Risk assessments &amp; method statements for exterior cleaning</small></div>
+      <div><h1>WashRAMS</h1><small>RAMS &amp; COSHH for exterior cleaners</small></div>
     </div>
     <div class="actions">
       <button class="btn" id="btnNew" type="button">New job</button>
@@ -606,7 +606,7 @@ $("#form").addEventListener("change",e=>{
   const t=e.target;
   if(t.dataset.list){const arr=S.job[t.dataset.list];const i=arr.indexOf(t.value);if(t.checked&&i<0)arr.push(t.value);if(!t.checked&&i>=0)arr.splice(i,1);return changed(true)}
   if(t.id==="logoIn"&&t.files[0]){const fr=new FileReader();fr.onload=()=>shrinkImage(fr.result).then(u=>{S.company.logo=u;changed(true)});fr.readAsDataURL(t.files[0])}
-  if(t.id==="impJson"&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.job)throw 0;S={docType:S.docType,company:Object.assign(blankCompany(),d.company||S.company),job:Object.assign(blankJob(),d.job)};changed(true);toast("Job opened")}catch(err){toast("That file isn't a RAMS Builder job file")}};fr.readAsText(t.files[0])}
+  if(t.id==="impJson"&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.job)throw 0;S={docType:S.docType,company:Object.assign(blankCompany(),d.company||S.company),job:Object.assign(blankJob(),d.job)};changed(true);toast("Job opened")}catch(err){toast("That file isn't a WashRAMS job file")}};fr.readAsText(t.files[0])}
 });
 $("#form").addEventListener("click",e=>{
   const t=e.target.closest("button");if(!t)return;
