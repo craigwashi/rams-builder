@@ -27,6 +27,7 @@
   --accent:#4fb3cf; --accent-ink:#06222b; --accent-soft:#17343d; --amber:#e8b33a; --danger:#f2867e; --focus:#7fd0e6; color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body);margin:0}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -54,6 +55,19 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 .notice{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:14px;display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
 .notice p{margin:0}
+.overlay{position:fixed;inset:0;background:rgba(10,20,25,.45);display:flex;align-items:flex-start;justify-content:center;padding:calc(48px + env(safe-area-inset-top,0px)) 16px 16px;z-index:30;overflow:auto}
+.panel{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;width:100%;max-width:400px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.panel header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.panel h2{font:800 20px/1.1 var(--f-display);font-stretch:85%;margin:0;text-transform:uppercase;letter-spacing:.01em}
+.panel p{margin:0}
+.panel .x{border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 8px}
+.panel .btn.primary{justify-content:center;padding:9px 12px}
+.linkbtn{border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.links{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px}
+.err{color:var(--danger);font-size:14px;font-weight:600}
+.ok{background:var(--accent-soft);border-radius:8px;padding:9px 11px;font-size:14px}
+.acct-email{font-weight:700;overflow-wrap:anywhere}
+.cloudpill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 8px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
 
 details.sec{background:var(--panel);border:1px solid var(--line);border-radius:10px}
@@ -188,6 +202,7 @@ details.sec>summary .count+*{margin-left:0}
       <div><h1>WashRAMS</h1><small>RAMS &amp; COSHH for exterior cleaners</small></div>
     </div>
     <div class="actions">
+      <button class="btn" id="btnAccount" type="button" hidden>Sign in</button>
       <button class="btn" id="btnNew" type="button">New job</button>
       <button class="btn" id="btnSave" type="button">Save job</button>
       <button class="btn" id="btnPrint" type="button" hidden>Print</button>
@@ -204,9 +219,11 @@ details.sec>summary .count+*{margin-left:0}
     <div class="previewWrap" id="previewWrap"><div class="docswitch" role="group" aria-label="Document"><button type="button" class="btn" id="dtRams" aria-pressed="true">RAMS</button><button type="button" class="btn" id="dtCoshh" aria-pressed="false">COSHH assessment</button></div><div class="paperScaler" id="scaler"><div class="doc" id="doc"></div></div></div>
   </div>
 </div>
+<div class="overlay" id="acctOverlay" hidden><div class="panel" id="acctPanel" role="dialog" aria-modal="true" aria-labelledby="acctTitle"></div></div>
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script>
 "use strict";
 /* ================= Reference data ================= */
@@ -478,7 +495,10 @@ const LEGIS = [
 /* ================= State ================= */
 function today(off=0){const d=new Date();d.setDate(d.getDate()+off);return d.toISOString().slice(0,10)}
 function blankCompany(){return{name:"",address:"",phone:"",email:"",insurer:"",cover:"",logo:"",assessor:"",position:""}}
-function blankJob(){return{
+function newId(){try{return crypto.randomUUID()}catch(e){return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&3|8)).toString(16)})}}
+const DEFAULT_KEYS=["hours","operatives","firstAider","hospital","hospitalAddr","water","welfare","waste"];
+function blankJob(){const j=blankJobBase();const d=(typeof LS!=="undefined"&&LS.get("rams.defaults"))||{};DEFAULT_KEYS.forEach(k=>{if(d[k])j[k]=d[k]});j.id=newId();return j}
+function blankJobBase(){return{
   ref:"", rev:"1", client:"", siteAddress:"", siteContact:"", contactPhone:"", start:today(1), duration:"1 day", hours:"08:00 – 17:00",
   scope:"", methods:[], access:["ground"], chems:[], site:[], custom:[], operatives:"2",
   firstAider:"", hospital:"", hospitalAddr:"", welfare:"Client's facilities by agreement; otherwise portable welfare and hand-wash station on vehicle.",
@@ -502,9 +522,10 @@ const LS = {get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){retur
 let S = (()=>{const d=LS.get("rams.draft");const c=LS.get("rams.company");
   if(d&&d.job){d.job=Object.assign(blankJob(),d.job);d.company=Object.assign(blankCompany(),c||d.company||{});return d}
   const ex=exampleState(); if(c&&c.name){ex.company=Object.assign(blankCompany(),c)} return ex})();
+if(!S.job.id)S.job.id=newId();
 
 let saveTimer=null;
-function persist(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{LS.set("rams.draft",S);LS.set("rams.company",S.company)},400)}
+function persist(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{LS.set("rams.draft",S);LS.set("rams.company",S.company);if(typeof Cloud!=="undefined")Cloud.queueProfile()},400)}
 
 /* ================= Helpers ================= */
 const $=s=>document.querySelector(s);
@@ -583,10 +604,17 @@ function renderForm(){
     ${field("job.waste","Waste & run-off",{type:"textarea",rows:2})}
     ${field("job.extraEquip","Other equipment (one per line)",{type:"textarea",rows:2})}
     ${field("job.notes","Additional notes",{type:"textarea",rows:2})}
+    <div class="row-add"><button class="btn small" type="button" id="saveDefaults">Use these details for new jobs</button></div>
+    <p class="hint">Saves the working hours, operatives, first aider, A&amp;E, water, welfare and waste details${Cloud.user?" to your account":""} so every new job starts with them.</p>
     <div class="grid2">${field("job.assessDate","Assessment date",{type:"date"})}${field("job.reviewDate","Review date",{type:"date"})}</div>`,null,openSecs.has(8))+
-  sec(9,"Saved jobs",`${jobs.length?`<div class="joblist">${jobs.map((jb,i)=>`<div class="jobitem"><div><b>${esc(jb.job.client||"Untitled")} · ${esc(jb.job.ref||"")}</b><small>${esc(jb.job.siteAddress||"")} · saved ${esc(new Date(jb.saved).toLocaleDateString("en-GB"))}</small></div><button class="btn small" type="button" data-load="${i}">Open</button><button class="btn small danger" type="button" data-del="${i}">${delArm===i?"Confirm":"Delete"}</button></div>`).join("")}</div>`:`<p class="hint">Saved jobs appear here. Use “Save job” at the top. They're stored in this browser only.</p>`}
+  (Cloud.user?sec(9,"Your saved jobs",`<p class="hint"><span class="cloudpill">Account</span> Jobs saved with “Save job” are stored in your account and open on any device.</p>
+    ${Cloud.jobs.length?`<div class="joblist">${Cloud.jobs.map(jb=>`<div class="jobitem"><div><b>${esc(jb.client||"Untitled")} · ${esc(jb.ref||"")}</b><small>${esc(jb.site||"")} · saved ${esc(new Date(jb.updated_at).toLocaleDateString("en-GB"))}</small></div><button class="btn small" type="button" data-cload="${esc(jb.id)}">Open</button><button class="btn small danger" type="button" data-cdel="${esc(jb.id)}">${delArm===jb.id?"Confirm":"Delete"}</button></div>`).join("")}</div>`:`<p class="hint">${Cloud.loading?"Loading your jobs…":"No jobs saved to your account yet."}</p>`}
+    ${jobs.length?`<div class="ok">${jobs.length} job${jobs.length>1?"s are":" is"} saved on this device only. <button class="linkbtn" type="button" id="uploadLocal">Copy ${jobs.length>1?"them":"it"} to my account</button></div>`:""}
+    <div class="row-add"><button class="btn small" type="button" id="expJson">Download job file</button><label class="btn small" for="impJson">Open job file</label><input id="impJson" type="file" accept=".json,application/json" hidden></div>`,Cloud.jobs.length||null,openSecs.has(9))
+  :sec(9,"Saved jobs",`${jobs.length?`<div class="joblist">${jobs.map((jb,i)=>`<div class="jobitem"><div><b>${esc(jb.job.client||"Untitled")} · ${esc(jb.job.ref||"")}</b><small>${esc(jb.job.siteAddress||"")} · saved ${esc(new Date(jb.saved).toLocaleDateString("en-GB"))}</small></div><button class="btn small" type="button" data-load="${i}">Open</button><button class="btn small danger" type="button" data-del="${i}">${delArm===i?"Confirm":"Delete"}</button></div>`).join("")}</div>`:`<p class="hint">Saved jobs appear here. Use “Save job” at the top. They're stored in this browser only.</p>`}
+    ${Cloud.enabled?`<div class="ok"><button class="linkbtn" type="button" id="openAcct">Create a free account</button> to keep your company details and jobs safe and use them on any device.</div>`:""}
     <div class="row-add"><button class="btn small" type="button" id="expJson">Download job file</button><label class="btn small" for="impJson">Open job file</label><input id="impJson" type="file" accept=".json,application/json" hidden></div>
-    <p class="hint">Job files let you back up a RAMS or move it to another device.</p>`,jobs.length||null,openSecs.has(9));
+    <p class="hint">Job files let you back up a RAMS or move it to another device.</p>`,jobs.length||null,openSecs.has(9)));
   const f=$("#form");const st=f.scrollTop;f.innerHTML=html;f.scrollTop=st;
 }
 let delArm=-1;
@@ -606,7 +634,7 @@ $("#form").addEventListener("change",e=>{
   const t=e.target;
   if(t.dataset.list){const arr=S.job[t.dataset.list];const i=arr.indexOf(t.value);if(t.checked&&i<0)arr.push(t.value);if(!t.checked&&i>=0)arr.splice(i,1);return changed(true)}
   if(t.id==="logoIn"&&t.files[0]){const fr=new FileReader();fr.onload=()=>shrinkImage(fr.result).then(u=>{S.company.logo=u;changed(true)});fr.readAsDataURL(t.files[0])}
-  if(t.id==="impJson"&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.job)throw 0;S={docType:S.docType,company:Object.assign(blankCompany(),d.company||S.company),job:Object.assign(blankJob(),d.job)};changed(true);toast("Job opened")}catch(err){toast("That file isn't a WashRAMS job file")}};fr.readAsText(t.files[0])}
+  if(t.id==="impJson"&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.job)throw 0;S={docType:S.docType,company:Cloud.user?S.company:Object.assign(blankCompany(),d.company||S.company),job:Object.assign(blankJob(),d.job,{id:newId()})};changed(true);toast("Job opened")}catch(err){toast("That file isn't a WashRAMS job file")}};fr.readAsText(t.files[0])}
 });
 $("#form").addEventListener("click",e=>{
   const t=e.target.closest("button");if(!t)return;
@@ -618,9 +646,15 @@ $("#form").addEventListener("click",e=>{
   if(t.id==="custAdd"){S.job.custom.push({h:"",who:"Operatives",l:3,s:3,c:"",rl:1,rs:3});openSecs.add(7);return changed(true)}
   if(t.dataset.rmcust!=null){S.job.custom.splice(+t.dataset.rmcust,1);return changed(true)}
   if(t.id==="logoRm"){S.company.logo="";return changed(true)}
-  if(t.dataset.load!=null){const jb=(LS.get("rams.jobs")||[])[+t.dataset.load];if(jb){S={docType:S.docType,company:Object.assign(blankCompany(),jb.company),job:Object.assign(blankJob(),jb.job)};changed(true);toast("Job opened")}return}
+  if(t.dataset.load!=null){const jb=(LS.get("rams.jobs")||[])[+t.dataset.load];if(jb){S={docType:S.docType,company:Object.assign(blankCompany(),jb.company),job:Object.assign(blankJob(),jb.job)};if(!jb.job.id)S.job.id=newId();changed(true);toast("Job opened")}return}
   if(t.dataset.del!=null){const i=+t.dataset.del;if(delArm!==i){delArm=i;renderForm();setTimeout(()=>{if(delArm===i){delArm=-1;renderForm()}},4000);return}
     const jobs=LS.get("rams.jobs")||[];jobs.splice(i,1);LS.set("rams.jobs",jobs);delArm=-1;renderForm();toast("Job deleted");return}
+  if(t.id==="saveDefaults"){const d={};DEFAULT_KEYS.forEach(k=>d[k]=S.job[k]);LS.set("rams.defaults",d);Cloud.saveDefaults(d);toast("New jobs will start with these details");return}
+  if(t.id==="openAcct"){Account.open(Cloud.enabled?"signup":"signin");return}
+  if(t.id==="uploadLocal"){Cloud.uploadLocal();return}
+  if(t.dataset.cload){Cloud.openJob(t.dataset.cload);return}
+  if(t.dataset.cdel){const id=t.dataset.cdel;if(delArm!==id){delArm=id;renderForm();setTimeout(()=>{if(delArm===id){delArm=-1;renderForm()}},4000);return}
+    delArm=-1;Cloud.deleteJob(id);return}
   if(t.id==="expJson"){saveFile(fileBase()+".json",JSON.stringify({app:"rams-builder",version:1,company:S.company,job:S.job},null,2));return}
 });
 
@@ -915,6 +949,160 @@ $("#btnPdf").addEventListener("click",async e=>{
   finally{b.disabled=false;b.textContent=old}
 });
 
+/* ================= Accounts (Supabase) ================= */
+/* Fill these in from Supabase: Project Settings > API. The publishable/anon key is safe to be public; row level security protects the data. */
+const CLOUD_CONFIG={url:"",key:""};
+const EXAMPLE_CO="Brightside Exterior Cleaning Ltd";
+const Cloud={
+  enabled:false, sb:null, user:null, jobs:[], loading:false, profileTimer:null, lastSync:null,
+  init(){
+    this.enabled=!!(CLOUD_CONFIG.url&&CLOUD_CONFIG.key&&window.supabase&&window.supabase.createClient&&STANDALONE_OK());
+    if(!this.enabled)return;
+    this.sb=window.supabase.createClient(CLOUD_CONFIG.url,CLOUD_CONFIG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    const b=$("#btnAccount");b.hidden=false;b.addEventListener("click",()=>Account.open(this.user?"account":"signin"));
+    this.sb.auth.onAuthStateChange((ev,session)=>{
+      if(ev==="PASSWORD_RECOVERY"){Account.open("newpass")}
+      const u=session?session.user:null;
+      if((u&&u.id)!==(this.user&&this.user.id))setTimeout(()=>this.setUser(u),0);
+    });
+  },
+  async setUser(u){
+    this.user=u;const b=$("#btnAccount");b.textContent=u?"My account":"Sign in";b.classList.toggle("primary",false);
+    this.jobs=[];
+    if(!u){renderForm();Account.refresh();return}
+    this.loading=true;renderForm();
+    await Promise.all([this.loadProfile(),this.loadJobs()]);
+    this.loading=false;renderForm();Account.refresh();
+  },
+  async loadProfile(){
+    const {data,error}=await this.sb.from("profiles").select("company,defaults").eq("user_id",this.user.id).maybeSingle();
+    if(error){toast("Couldn't load your account details");return}
+    if(data){
+      S.company=Object.assign(blankCompany(),data.company||{});S.example=false;LS.set("rams.company",S.company);
+      if(data.defaults&&Object.keys(data.defaults).length)LS.set("rams.defaults",data.defaults);
+      LS.set("rams.draft",S);renderDoc();
+    }else{
+      const company=S.company.name===EXAMPLE_CO?blankCompany():S.company;
+      if(S.company.name===EXAMPLE_CO){S.company=company;S.example=false;renderDoc()}
+      await this.sb.from("profiles").upsert({user_id:this.user.id,company,defaults:LS.get("rams.defaults")||{},updated_at:new Date().toISOString()});
+    }
+    this.lastSync=new Date();
+  },
+  queueProfile(){
+    if(!this.user||S.company.name===EXAMPLE_CO)return;
+    clearTimeout(this.profileTimer);
+    this.profileTimer=setTimeout(async()=>{
+      const {error}=await this.sb.from("profiles").upsert({user_id:this.user.id,company:S.company,updated_at:new Date().toISOString()});
+      if(error)toast("Couldn't save your company details to your account");else{this.lastSync=new Date();Account.refresh()}
+    },1500);
+  },
+  async saveDefaults(d){
+    if(!this.user)return;
+    const {error}=await this.sb.from("profiles").upsert({user_id:this.user.id,company:S.company,defaults:d,updated_at:new Date().toISOString()});
+    if(error)toast("Couldn't save the defaults to your account");
+  },
+  async loadJobs(){
+    const {data,error}=await this.sb.from("jobs").select("id,ref,client,site,updated_at").order("updated_at",{ascending:false}).limit(300);
+    if(error){toast("Couldn't load your saved jobs");return}
+    this.jobs=data||[];
+  },
+  row(job){return{id:job.id,user_id:this.user.id,ref:job.ref||"",client:job.client||"",site:job.siteAddress||"",data:{job},updated_at:new Date().toISOString()}},
+  async saveJob(){
+    if(!S.job.id)S.job.id=newId();
+    const b=$("#btnSave");b.disabled=true;
+    const {error}=await this.sb.from("jobs").upsert(this.row(JSON.parse(JSON.stringify(S.job))));
+    b.disabled=false;
+    if(error){toast("Couldn't save the job. Check your connection and try again.");return}
+    const existed=this.jobs.some(j=>j.id===S.job.id);
+    await this.loadJobs();renderForm();toast(existed?"Job updated in your account":"Job saved to your account");
+  },
+  async openJob(id){
+    const {data,error}=await this.sb.from("jobs").select("data").eq("id",id).maybeSingle();
+    if(error||!data){toast("Couldn't open that job");return}
+    S={docType:S.docType,company:S.company,job:Object.assign(blankJob(),data.data.job||{},{id})};changed(true);toast("Job opened");
+  },
+  async deleteJob(id){
+    const {error}=await this.sb.from("jobs").delete().eq("id",id);
+    if(error){toast("Couldn't delete the job");return}
+    this.jobs=this.jobs.filter(j=>j.id!==id);renderForm();toast("Job deleted");
+  },
+  async uploadLocal(){
+    const local=LS.get("rams.jobs")||[];if(!local.length)return;
+    const rows=local.map(e=>{const job=Object.assign({},e.job);if(!job.id)job.id=newId();return this.row(job)});
+    const {error}=await this.sb.from("jobs").upsert(rows);
+    if(error){toast("Couldn't copy the jobs to your account");return}
+    LS.set("rams.jobs",[]);await this.loadJobs();renderForm();toast(`${rows.length} job${rows.length>1?"s":""} copied to your account`);
+  },
+  async deleteAllData(){
+    const a=await this.sb.from("jobs").delete().eq("user_id",this.user.id);
+    const b=await this.sb.from("profiles").delete().eq("user_id",this.user.id);
+    if(a.error||b.error){Account.msg("Couldn't delete everything. Try again.",true);return}
+    await this.sb.auth.signOut();Account.close();toast("Your saved data has been deleted");
+  }
+};
+
+const Account={
+  mode:"signin", armDelete:false, note:"", noteErr:false,
+  open(mode){this.mode=mode;this.note="";this.armDelete=false;$("#acctOverlay").hidden=false;this.render();const f=$("#acctPanel input");if(f)f.focus()},
+  close(){$("#acctOverlay").hidden=true},
+  refresh(){if(!$("#acctOverlay").hidden){if(Cloud.user&&["signin","signup"].includes(this.mode))this.mode="account";this.render()}},
+  msg(t,err){this.note=t;this.noteErr=!!err;const m=$("#acctMsg");if(m){m.textContent=t;m.className=err?"err":"ok";m.hidden=!t}},
+  render(){
+    const m=this.mode,u=Cloud.user;
+    const titles={signin:"Sign in",signup:"Create account",forgot:"Reset password",newpass:"Choose a new password",account:"My account"};
+    const pw=(id,label,ac)=>`<div class="field"><label for="${id}">${label}</label><input id="${id}" type="password" autocomplete="${ac}" ${ac==="new-password"?'minlength="8"':""} required></div>`;
+    const em=`<div class="field"><label for="acEmail">Email</label><input id="acEmail" type="email" autocomplete="email" required value="${esc(this.lastEmail||"")}"></div>`;
+    let body="";
+    if(m==="signin")body=`<form id="acForm" class="secbody" style="padding:0">${em}${pw("acPass","Password","current-password")}<button class="btn primary" type="submit">Sign in</button></form>
+      <div class="links"><button class="linkbtn" type="button" data-mode="signup">Create a free account</button><button class="linkbtn" type="button" data-mode="forgot">Forgot password?</button></div>`;
+    if(m==="signup")body=`<p class="hint">Save your company details, logo, default site details and jobs, and use them on any device.</p>
+      <form id="acForm" class="secbody" style="padding:0">${em}${pw("acPass","Password (at least 8 characters)","new-password")}<button class="btn primary" type="submit">Create account</button></form>
+      <div class="links"><button class="linkbtn" type="button" data-mode="signin">I already have an account</button></div>`;
+    if(m==="forgot")body=`<p class="hint">Enter your email and we'll send you a link to set a new password.</p>
+      <form id="acForm" class="secbody" style="padding:0">${em}<button class="btn primary" type="submit">Send reset link</button></form>
+      <div class="links"><button class="linkbtn" type="button" data-mode="signin">Back to sign in</button></div>`;
+    if(m==="newpass")body=`<form id="acForm" class="secbody" style="padding:0">${pw("acPass","New password","new-password")}<button class="btn primary" type="submit">Save new password</button></form>`;
+    if(m==="account")body=u?`<p>Signed in as <span class="acct-email">${esc(u.email||"")}</span></p>
+      <p class="hint">Your company details and logo save to your account automatically. Jobs are saved when you press “Save job”.${Cloud.lastSync?` Last synced ${Cloud.lastSync.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}.`:""}</p>
+      <p class="hint">${Cloud.jobs.length} saved job${Cloud.jobs.length===1?"":"s"}.</p>
+      <button class="btn" type="button" id="acChangePw">Change password</button>
+      <button class="btn" type="button" id="acSignOut">Sign out</button>
+      <button class="btn danger" type="button" id="acDelete">${this.armDelete?"Tap again to delete everything":"Delete my saved data"}</button>`:`<p>You're signed out.</p><button class="btn primary" type="button" data-mode="signin">Sign in</button>`;
+    $("#acctPanel").innerHTML=`<header><h2 id="acctTitle">${titles[m]}</h2><button class="x" type="button" id="acClose" aria-label="Close">×</button></header>${body}<p id="acctMsg" class="${this.noteErr?"err":"ok"}" ${this.note?"":"hidden"}>${esc(this.note)}</p>`;
+  },
+  async submit(){
+    const email=($("#acEmail")||{}).value?.trim();const pass=($("#acPass")||{}).value||"";const btn=$("#acForm button[type=submit]");
+    if(email)this.lastEmail=email;
+    btn.disabled=true;this.msg("");
+    try{
+      if(this.mode==="signin"){const {error}=await Cloud.sb.auth.signInWithPassword({email,password:pass});if(error)throw error;this.mode="account";toast("Signed in");this.close()}
+      else if(this.mode==="signup"){const {data,error}=await Cloud.sb.auth.signUp({email,password:pass,options:{emailRedirectTo:location.origin+location.pathname}});if(error)throw error;
+        if(data.session){toast("Account created");this.close()}else this.msg("Check your email and click the link to confirm your account, then sign in.")}
+      else if(this.mode==="forgot"){const {error}=await Cloud.sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)throw error;this.msg("If an account exists for that email, a reset link is on its way.")}
+      else if(this.mode==="newpass"){const {error}=await Cloud.sb.auth.updateUser({password:pass});if(error)throw error;toast("Password updated");this.mode="account";this.render()}
+    }catch(e){this.msg(friendlyAuthError(e),true)}
+    finally{if(btn.isConnected)btn.disabled=false}
+  }
+};
+function friendlyAuthError(e){const t=(e&&e.message)||"";
+  if(/invalid login/i.test(t))return "That email and password don't match. Check them and try again.";
+  if(/already registered|already exists/i.test(t))return "There's already an account with that email. Sign in instead.";
+  if(/password.*(at least|short|weak)/i.test(t))return "Choose a longer password (at least 8 characters).";
+  if(/email not confirmed/i.test(t))return "Confirm your email first using the link we sent you.";
+  if(/rate|too many/i.test(t))return "Too many attempts. Wait a minute and try again.";
+  if(/fetch|network/i.test(t))return "Can't reach the server. Check your connection.";
+  return t||"Something went wrong. Try again.";}
+$("#acctOverlay").addEventListener("click",e=>{
+  if(e.target.id==="acctOverlay"||e.target.id==="acClose")return Account.close();
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.mode){Account.mode=b.dataset.mode;Account.note="";Account.render();return}
+  if(b.id==="acSignOut"){Cloud.sb.auth.signOut().then(()=>{Account.close();toast("Signed out")});return}
+  if(b.id==="acChangePw"){Account.mode="newpass";Account.note="";Account.render();return}
+  if(b.id==="acDelete"){if(!Account.armDelete){Account.armDelete=true;Account.render();setTimeout(()=>{if(Account.armDelete){Account.armDelete=false;Account.render()}},4000);return}Cloud.deleteAllData()}
+});
+$("#acctOverlay").addEventListener("submit",e=>{e.preventDefault();Account.submit()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#acctOverlay").hidden)Account.close()});
+
 /* ================= Top bar ================= */
 let newArm=false;
 $("#btnNew").addEventListener("click",e=>{
@@ -924,7 +1112,8 @@ $("#btnNew").addEventListener("click",e=>{
   S={docType:S.docType,company:S.example&&S.company.name==="Brightside Exterior Cleaning Ltd"?blankCompany():S.company,job:blankJob()};S.job.ref=autoRef();openSecs=new Set([1,2]);changed(true);toast("New job started");
 });
 $("#btnSave").addEventListener("click",()=>{
-  const jobs=LS.get("rams.jobs")||[];const i=jobs.findIndex(x=>x.job.ref&&x.job.ref===S.job.ref);
+  if(Cloud.user){Cloud.saveJob();return}
+  const jobs=LS.get("rams.jobs")||[];const i=jobs.findIndex(x=>(x.job.id&&x.job.id===S.job.id)||(!x.job.id&&x.job.ref&&x.job.ref===S.job.ref));
   const entry={saved:Date.now(),company:S.company,job:JSON.parse(JSON.stringify(S.job))};
   if(i>=0)jobs[i]=entry;else jobs.unshift(entry);
   if(LS.set("rams.jobs",jobs.slice(0,60))){toast(i>=0?"Job updated":"Job saved");renderForm()}else toast("This browser won't let the page save. Use Download job file instead.");
@@ -934,6 +1123,7 @@ $("#tabEdit").addEventListener("click",()=>setView("edit"));
 $("#tabPrev").addEventListener("click",()=>setView("preview"));
 
 if(STANDALONE_OK()){const bp=$("#btnPrint");bp.hidden=false;bp.addEventListener("click",()=>window.print())}
+Cloud.init();
 renderForm();renderDoc();
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitPaper);
 </script>
