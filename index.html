@@ -548,6 +548,7 @@ const SUP_PRODUCTS=[
   {id:"ps-hypo",s:"pureseal",p:"PureSeal hypo-14-15 Sodium Hypochlorite 15%",b:"hypo",a:"Sodium hypochlorite 15%"},
   {id:"ps-bioclear",s:"pureseal",p:"PureSeal BioClear Pro 50",b:"quat",a:"DDAC 50%",use:"Solvent-based biocide for colder weather"},
   {id:"ps-bacclear",s:"pureseal",p:"PureSeal BacClear Pro BAC50",b:"quat",a:"Benzalkonium chloride 50%",use:"Biocide for moss, algae and lichen on all surfaces"},
+  {id:"ps-hybridbio",s:"pureseal",p:"HybridBio Pro",b:"quat",a:"Benzalkonium chloride + DDAC, 80% active, contains ethanol. HSE 11183-GB",use:"Biocide for moss, algae and biofilm on roofs, stone, paving, tarmac and render",dil:"Up to 1:80"},
   {id:"ps-puresurf",s:"pureseal",p:"PureSurf Boost",b:"surf",use:"High-foam surfactant for sodium hypochlorite mixes"},
   {id:"wcw-razrglide",s:"wcw",p:"FaceLift RazrGlide Premium Detergent",b:"surf",use:"Window cleaning detergent"},
   {id:"jenny-hypo",s:"jenny",p:"Sodium Hypochlorite Pool & Patio Cleaner 14–15%",b:"hypo",a:"Sodium hypochlorite 14–15%"},
@@ -588,7 +589,7 @@ let libEdit=null;
 let libBrowse=false,libSup="";
 function supToLib(sp){const c=blankLibChem();const r=sp.b&&CHEMS[sp.b],x=sp.b&&COSHH_X[sp.b];
   if(r){["cls","routes","ctrl","fa","store","spill"].forEach(k=>c[k]=r[k]);c.ghs=r.ghs.slice();c.ppe=r.ppe.slice();["wel","health","surv","disp","fire"].forEach(k=>c[k]=x[k]);c.risk=x.risk.slice()}
-  return Object.assign(c,{supId:sp.id,name:sp.p,product:sp.p,supplier:SUPPLIERS[sp.s].n,use:sp.use||(r?r.use:""),cls:r&&sp.a?sp.a+". "+c.cls:c.cls})}
+  return Object.assign(c,{supId:sp.id,name:sp.p,product:sp.p,supplier:SUPPLIERS[sp.s].n,use:sp.use||(r?r.use:""),dil:sp.dil||"",cls:r&&sp.a?sp.a+". "+c.cls:c.cls})}
 function syncLib(c){S.job.chems.forEach((ch,i)=>{if(ch.libId===c.libId){const keep={product:ch.product,dil:ch.dil,app:ch.app,qty:ch.qty,freq:ch.freq};S.job.chems[i]=Object.assign(libToJob(c),Object.fromEntries(Object.entries(keep).filter(([k,v])=>v)))}})}
 function newId(){try{return crypto.randomUUID()}catch(e){return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&3|8)).toString(16)})}}
 const DEFAULT_KEYS=["hours","operatives","firstAider","hospital","hospitalAddr","water","welfare","waste"];
