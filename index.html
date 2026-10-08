@@ -130,6 +130,8 @@ details.sec>summary .count+*{margin-left:0}
 .jobitem div{flex:1;min-width:0}
 .jobitem small{display:block;color:var(--muted)}
 .jobitem b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.supbrowse{border:1px dashed var(--accent);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.supbrowse h4{margin:6px 0 0;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
 .logoPrev{display:flex;align-items:center;gap:10px}
 .logoPrev img{max-height:44px;max-width:140px;border:1px solid var(--line);border-radius:4px;background:#fff;padding:2px}
 
@@ -524,6 +526,32 @@ const COSHH_X = {
   pure:{wel:"Not applicable",form:"Liquid",health:"No health effects.",surv:"Not required.",disp:"Exhausted resin returned to supplier or disposed of as directed.",fire:"Not applicable.",risk:[1,1,1,1]}
 };
 const CUSTOM_X={wel:"See section 8 of the safety data sheet",form:"See safety data sheet",health:"See section 11 of the safety data sheet.",surv:"Review the SDS and assess whether skin or respiratory surveillance is needed.",disp:"See section 13 of the safety data sheet.",fire:"See section 5 of the safety data sheet.",risk:[3,3,1,3]};
+/* Supplier product library: users pick products to copy into My chemicals.
+   b = generic chemical (CHEMS key) the hazard details are based on; a = active ingredient as the supplier states it. */
+const SUPPLIERS={
+  swuk:{n:"SoftWash UK",url:"https://www.softwashing.uk"},
+  benz:{n:"Benz Softwash",url:"https://benzsoftwash.co.uk"},
+  pureseal:{n:"Pureseal Services",url:"https://puresealservices.co.uk"},
+  emko:{n:"Emko Industrial",url:"https://www.emkoindustrial.co.uk"},
+  wcw:{n:"Window Cleaning Warehouse",url:"https://www.windowcleaningwarehouse.co.uk"},
+  jenny:{n:"Jennychem",url:"https://www.jennychem.com"},
+  smartseal:{n:"Smartseal",url:"https://www.smartseal.co.uk"}
+};
+const SUP_PRODUCTS=[
+  {id:"swuk-hypo",s:"swuk",p:"Sodium Hypochlorite For Soft Washing 14–15%",b:"hypo",a:"Sodium hypochlorite 14–15%"},
+  {id:"swuk-pro50",s:"swuk",p:"Soft Wash Pro 50 Biocide",b:"quat",a:"DDAC 50%",use:"Softwash biocide for render, roofs and hard surfaces"},
+  {id:"swuk-cleverwash",s:"swuk",p:"Clever Wash Softwash Surfactant",b:"surf",use:"Surfactant added to sodium hypochlorite softwash mixes"},
+  {id:"benz-lightning",s:"benz",p:"Lightning Cleanze",b:"hypo",a:"Sodium hypochlorite 10–11%",use:"Fast-acting biocide for heavy growth and first cleans"},
+  {id:"benz-tornado",s:"benz",p:"Tornado Cleanze",b:"hypo",a:"Sodium hypochlorite gel",use:"Thick gel for stubborn organic staining"},
+  {id:"benz-bio",s:"benz",p:"Bio Cleanze",b:"quat",a:"DDAC 50%",use:"Long-term biocide treatment and protection of exterior surfaces"},
+  {id:"benz-window",s:"benz",p:"Window Cleanze",b:"surf",use:"Water-fed pole additive for window cleaning"},
+  {id:"ps-hypo",s:"pureseal",p:"PureSeal hypo-14-15 Sodium Hypochlorite 15%",b:"hypo",a:"Sodium hypochlorite 15%"},
+  {id:"ps-bioclear",s:"pureseal",p:"PureSeal BioClear Pro 50",b:"quat",a:"DDAC 50%",use:"Solvent-based biocide for colder weather"},
+  {id:"ps-bacclear",s:"pureseal",p:"PureSeal BacClear Pro BAC50",b:"quat",a:"Benzalkonium chloride 50%",use:"Biocide for moss, algae and lichen on all surfaces"},
+  {id:"ps-puresurf",s:"pureseal",p:"PureSurf Boost",b:"surf",use:"High-foam surfactant for sodium hypochlorite mixes"},
+  {id:"wcw-razrglide",s:"wcw",p:"FaceLift RazrGlide Premium Detergent",b:"surf",use:"Window cleaning detergent"},
+  {id:"jenny-hypo",s:"jenny",p:"Sodium Hypochlorite Pool & Patio Cleaner 14–15%",b:"hypo",a:"Sodium hypochlorite 14–15%"},
+];
 const GHS = {
   corrosive:{t:"Corrosive",c:"GHS05"}, harmful:{t:"Irritant / harmful",c:"GHS07"}, env:{t:"Environment",c:"GHS09"},
   flame:{t:"Flammable",c:"GHS02"}, oxidiser:{t:"Oxidiser",c:"GHS03"}, health:{t:"Health hazard",c:"GHS08"}, toxic:{t:"Toxic",c:"GHS06"}
@@ -557,6 +585,10 @@ const LIBF=[["name","Chemical name"],["product","Product / trade name"],["suppli
 function blankLibChem(){return{libId:newId(),name:"",product:"",supplier:"",sds:"",use:"",dil:"",app:"",cls:"",wel:"",routes:"Skin, eyes",health:"",ctrl:"",fa:"",store:"",spill:"",fire:"",disp:"",surv:"",ghs:[],ppe:["goggles","gloves_chem","boots"],risk:[3,3,1,3]}}
 function libToJob(c){const o=JSON.parse(JSON.stringify(c));o.id="custom";return o}
 let libEdit=null;
+let libBrowse=false,libSup="";
+function supToLib(sp){const c=blankLibChem();const r=sp.b&&CHEMS[sp.b],x=sp.b&&COSHH_X[sp.b];
+  if(r){["cls","routes","ctrl","fa","store","spill"].forEach(k=>c[k]=r[k]);c.ghs=r.ghs.slice();c.ppe=r.ppe.slice();["wel","health","surv","disp","fire"].forEach(k=>c[k]=x[k]);c.risk=x.risk.slice()}
+  return Object.assign(c,{supId:sp.id,name:sp.p,product:sp.p,supplier:SUPPLIERS[sp.s].n,use:sp.use||(r?r.use:""),cls:r&&sp.a?sp.a+". "+c.cls:c.cls})}
 function syncLib(c){S.job.chems.forEach((ch,i)=>{if(ch.libId===c.libId){const keep={product:ch.product,dil:ch.dil,app:ch.app,qty:ch.qty,freq:ch.freq};S.job.chems[i]=Object.assign(libToJob(c),Object.fromEntries(Object.entries(keep).filter(([k,v])=>v)))}})}
 function newId(){try{return crypto.randomUUID()}catch(e){return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&3|8)).toString(16)})}}
 const DEFAULT_KEYS=["hours","operatives","firstAider","hospital","hospitalAddr","water","welfare","waste"];
@@ -684,6 +716,11 @@ function renderForm(){
     <p class="hint">Job files let you back up a RAMS or move it to another device.</p>`,jobs.length||null,openSecs.has(9)));
 
   const lib=S.company.chemLib||[];
+  const supBrowser=lib=>{const have=new Set(lib.map(c=>c.supId).filter(Boolean));const withProducts=Object.entries(SUPPLIERS).filter(([k])=>SUP_PRODUCTS.some(p=>p.s===k));const sups=withProducts.filter(([k])=>!libSup||k===libSup);
+    return `<div class="supbrowse"><p class="hint">Products from UK suppliers. Hazard details are filled in from the typical values for the active ingredient where it's known. Always check them against the product's safety data sheet.</p>
+      <div class="field"><label for="supPick">Supplier</label><select id="supPick"><option value="">All suppliers</option>${withProducts.map(([k,o])=>`<option value="${k}" ${libSup===k?"selected":""}>${esc(o.n)}</option>`).join("")}</select></div>
+      ${sups.map(([k,o])=>`<h4>${esc(o.n)}</h4><div class="joblist">${SUP_PRODUCTS.filter(p=>p.s===k).map(p=>`<div class="jobitem"><div><b>${esc(p.p)}</b><small>${esc(p.a||(p.b?CHEMS[p.b].n:"Add the hazard details from the SDS"))}</small></div>${have.has(p.id)?`<button class="btn small" type="button" disabled>Added</button>`:`<button class="btn small" type="button" data-supadd="${esc(p.id)}">Add</button>`}</div>`).join("")}</div>`).join("")}
+    </div>`};
   const libEditor=c=>{const i=lib.indexOf(c);return `<div class="chemcard">
       <header><b>${esc(c.name||"New chemical")}</b><button class="btn small" type="button" data-libdone="1">Done</button></header>
       ${LIBF.map(([k,l,ta])=>`<div class="field"><label for="lib_${i}_${k}">${l}</label>${ta?`<textarea id="lib_${i}_${k}" data-lib="${i}" data-k="${k}" rows="2">${esc(c[k]||"")}</textarea>`:`<input id="lib_${i}_${k}" data-lib="${i}" data-k="${k}" value="${esc(c[k]||"")}">`}</div>`).join("")}
@@ -693,7 +730,8 @@ function renderForm(){
       <div class="row-add"><button class="btn small danger" type="button" data-libdel="${i}">${delArm==="lib"+i?"Tap again to delete":"Delete from My chemicals"}</button></div></div>`};
   html+=sec(10,"My chemicals",`<p class="hint">Save the products you use with their safety data sheet details. Add them to any job from the Chemicals list, and their full COSHH assessment fills in automatically.${Cloud.user?" Saved to your account.":" Saved in this browser."}</p>
     ${lib.map((c,i)=>libEdit===c.libId?libEditor(c):`<div class="jobitem"><div><b>${esc(c.name||"Untitled chemical")}</b><small>${esc([c.product,c.supplier].filter(Boolean).join(" · ")||"No product details yet")}</small></div><button class="btn small" type="button" data-libedit="${esc(c.libId)}">Edit</button><button class="btn small" type="button" data-libadd="${i}">Add to job</button></div>`).join("")}
-    <div class="row-add"><button class="btn small" type="button" id="libNew">Add a chemical to my library</button></div>`,lib.length||null,openSecs.has(10));
+    <div class="row-add"><button class="btn small" type="button" id="libBrowse">${libBrowse?"Close supplier products":"Choose from supplier products"}</button><button class="btn small" type="button" id="libNew">Add a chemical to my library</button></div>
+    ${libBrowse?supBrowser(lib):""}`,lib.length||null,openSecs.has(10));
   const f=$("#form");const st=f.scrollTop;f.innerHTML=html;f.scrollTop=st;
 }
 let delArm=-1;
@@ -714,6 +752,7 @@ $("#form").addEventListener("input",e=>{
 $("#form").addEventListener("change",e=>{
   const t=e.target;
   if(t.dataset.libarr){const c=S.company.chemLib[+t.dataset.lib];const arr=c[t.dataset.libarr];const i=arr.indexOf(t.value);if(t.checked&&i<0)arr.push(t.value);if(!t.checked&&i>=0)arr.splice(i,1);t.closest(".check").classList.toggle("on",t.checked);syncLib(c);return changed(false)}
+  if(t.id==="supPick"){libSup=t.value;renderForm();return}
   if(t.dataset.list){const arr=S.job[t.dataset.list];const i=arr.indexOf(t.value);if(t.checked&&i<0)arr.push(t.value);if(!t.checked&&i>=0)arr.splice(i,1);return changed(true)}
   if(t.id==="logoIn"&&t.files[0]){const fr=new FileReader();fr.onload=()=>shrinkImage(fr.result).then(u=>{S.company.logo=u;changed(true)});fr.readAsDataURL(t.files[0])}
   if(t.id==="impJson"&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.job)throw 0;S={docType:S.docType,company:Cloud.user?S.company:Object.assign(blankCompany(),d.company||S.company),job:Object.assign(blankJob(),d.job,{id:newId()})};changed(true);toast("Job opened")}catch(err){toast("That file isn't a WashRAMS job file")}};fr.readAsText(t.files[0])}
@@ -724,6 +763,9 @@ $("#form").addEventListener("click",e=>{
   if(t.id==="exClear"){S={docType:S.docType,company:S.company.name==="Brightside Exterior Cleaning Ltd"?blankCompany():S.company,job:blankJob()};S.job.ref=autoRef();openSecs=new Set([1,2]);changed(true);return}
   if(t.dataset.rmchem!=null){S.job.chems.splice(+t.dataset.rmchem,1);return changed(true)}
   if(t.id==="libNew"){if(!S.company.chemLib)S.company.chemLib=[];const c=blankLibChem();S.company.chemLib.push(c);libEdit=c.libId;openSecs.add(10);changed(true);setTimeout(()=>{const f=document.querySelector('[data-k="name"][data-lib]');if(f)f.focus()},0);return}
+  if(t.id==="libBrowse"){libBrowse=!libBrowse;openSecs.add(10);renderForm();return}
+  if(t.dataset.supadd){const sp=SUP_PRODUCTS.find(p=>p.id===t.dataset.supadd);if(!sp)return;if(!S.company.chemLib)S.company.chemLib=[];if(S.company.chemLib.some(c=>c.supId===sp.id))return toast("That product is already in My chemicals");
+    const c=supToLib(sp);S.company.chemLib.push(c);changed(true);toast(sp.b?"Added to My chemicals":"Added to My chemicals. Tap Edit to add the hazard details from the SDS.");return}
   if(t.dataset.libedit){libEdit=t.dataset.libedit;renderForm();return}
   if(t.dataset.libdone){libEdit=null;renderForm();toast("Saved to My chemicals");return}
   if(t.dataset.libdel!=null){const i=+t.dataset.libdel;if(delArm!=="lib"+i){delArm="lib"+i;renderForm();setTimeout(()=>{if(delArm==="lib"+i){delArm=-1;renderForm()}},4000);return}
