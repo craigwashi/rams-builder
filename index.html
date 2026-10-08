@@ -615,6 +615,7 @@ function renderForm(){
       <button class="btn small danger" type="button" data-rmcust="${i}">Remove</button></div></div>`).join("");
   const jobs=LS.get("rams.jobs")||[];
   const html=
+  (!S.example&&!S.job.client&&!S.job.methods.length?`<div class="notice"><p><b>New job.</b> Fill in the sections below and your RAMS builds on the right. Want to see a finished one first?</p><button class="btn small" type="button" id="exLoad">Show an example</button></div>`:"")+
   (S.example?`<div class="notice"><p><b>Example job loaded.</b> Change any field and the RAMS updates as you type, or start a blank job.</p><button class="btn small" type="button" id="exClear">Start blank</button></div>`:"")+
   sec(1,"Your business",`
     <div class="grid2">${field("company.name","Company name")}${field("company.phone","Phone")}</div>
@@ -680,6 +681,7 @@ $("#form").addEventListener("change",e=>{
 });
 $("#form").addEventListener("click",e=>{
   const t=e.target.closest("button");if(!t)return;
+  if(t.id==="exLoad"){const ex=exampleState();S={docType:S.docType,company:S.company,job:Object.assign(ex.job,{id:newId()}),example:true};openSecs=new Set([1,2,3]);renderForm();renderDoc();persist();return}
   if(t.id==="exClear"){S={docType:S.docType,company:S.company.name==="Brightside Exterior Cleaning Ltd"?blankCompany():S.company,job:blankJob()};S.job.ref=autoRef();openSecs=new Set([1,2]);changed(true);return}
   if(t.dataset.rmchem!=null){S.job.chems.splice(+t.dataset.rmchem,1);return changed(true)}
   if(t.id==="chemAdd"){const v=$("#chemPick").value;if(!v)return toast("Choose a chemical from the list first");
@@ -1097,7 +1099,8 @@ const Cloud={
 const Gate={
   show(u){
     $("#gateLoading").hidden=true;
-    if(u){$("#home").hidden=true;$("#app").hidden=false;if(Account.host==="home"){Account.host="panel";$("#homeAuth").innerHTML=""}requestAnimationFrame(fitPaper)}
+    if(u){if(S.example||S.company.name===EXAMPLE_CO){S={docType:S.docType,company:blankCompany(),job:blankJob()};S.job.ref=autoRef();openSecs=new Set([1,2]);LS.set("rams.draft",S);renderForm();renderDoc()}
+      $("#home").hidden=true;$("#app").hidden=false;if(Account.host==="home"){Account.host="panel";$("#homeAuth").innerHTML=""}requestAnimationFrame(fitPaper)}
     else{$("#app").hidden=true;$("#acctOverlay").hidden=true;$("#home").hidden=false;Account.host="home";if(!["signin","signup","forgot"].includes(Account.mode))Account.mode="signup";Account.note="";Account.render()}
   }
 };
