@@ -548,7 +548,16 @@ const LEGIS = [
 
 /* ================= State ================= */
 function today(off=0){const d=new Date();d.setDate(d.getDate()+off);return d.toISOString().slice(0,10)}
-function blankCompany(){return{name:"",address:"",phone:"",email:"",insurer:"",cover:"",logo:"",assessor:"",position:""}}
+function blankCompany(){return{name:"",address:"",phone:"",email:"",insurer:"",cover:"",logo:"",assessor:"",position:"",chemLib:[]}}
+/* Fields a user can save for their own chemicals (snapshotted into each job that uses them) */
+const LIBF=[["name","Chemical name"],["product","Product / trade name"],["supplier","Supplier"],["sds","SDS date / revision"],["use","Used for"],["dil","Usual dilution"],["app","How it's applied"],
+  ["cls","Hazard classification (SDS section 2)",1],["wel","Workplace exposure limit (SDS section 8)"],["routes","Routes of exposure"],["health","Health effects (SDS section 11)",1],
+  ["ctrl","Control measures",1],["fa","First aid (SDS section 4)",1],["store","Storage & transport (SDS section 7)",1],["spill","Spillage (SDS section 6)",1],["fire","Fire (SDS section 5)",1],
+  ["disp","Disposal (SDS section 13)",1],["surv","Health surveillance",1]];
+function blankLibChem(){return{libId:newId(),name:"",product:"",supplier:"",sds:"",use:"",dil:"",app:"",cls:"",wel:"",routes:"Skin, eyes",health:"",ctrl:"",fa:"",store:"",spill:"",fire:"",disp:"",surv:"",ghs:[],ppe:["goggles","gloves_chem","boots"],risk:[3,3,1,3]}}
+function libToJob(c){const o=JSON.parse(JSON.stringify(c));o.id="custom";return o}
+let libEdit=null;
+function syncLib(c){S.job.chems.forEach((ch,i)=>{if(ch.libId===c.libId){const keep={product:ch.product,dil:ch.dil,app:ch.app,qty:ch.qty,freq:ch.freq};S.job.chems[i]=Object.assign(libToJob(c),Object.fromEntries(Object.entries(keep).filter(([k,v])=>v)))}})}
 function newId(){try{return crypto.randomUUID()}catch(e){return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&3|8)).toString(16)})}}
 const DEFAULT_KEYS=["hours","operatives","firstAider","hospital","hospitalAddr","water","welfare","waste"];
 function blankJob(){const j=blankJobBase();const d=(typeof LS!=="undefined"&&LS.get("rams.defaults"))||{};DEFAULT_KEYS.forEach(k=>{if(d[k])j[k]=d[k]});j.id=newId();return j}
@@ -609,7 +618,9 @@ let openSecs=new Set([1,2,3]);
 function renderForm(){
   const j=S.job,c=S.company;
   const chemCards=j.chems.map((ch,i)=>{const ref=CHEMS[ch.id];const name=ref?ref.n:(ch.name||"Custom chemical");
+    const inLib=!ref&&ch.libId&&(S.company.chemLib||[]).some(c=>c.libId===ch.libId);
     return `<div class="chemcard"><header><b>${esc(name)}</b><button class="btn small danger" type="button" data-rmchem="${i}">Remove</button></header>
+      ${!ref?(inLib?`<p class="hint"><span class="cloudpill">My chemicals</span> Full COSHH details come from your library (section 10).</p>`:`<div class="row-add"><button class="btn small" type="button" data-tolib="${i}">Save to My chemicals</button></div>`):""}
       ${ref?"":`<div class="field"><label for="ch_${i}_name">Chemical name</label><input id="ch_${i}_name" data-chem="${i}" data-k="name" value="${esc(ch.name||"")}"></div>
       <div class="field"><label for="ch_${i}_haz">Hazard classification (from the SDS)</label><input id="ch_${i}_haz" data-chem="${i}" data-k="cls" value="${esc(ch.cls||"")}" placeholder="e.g. Skin Corr. 1B (H314), Aquatic Acute 1"></div>`}
       <div class="field"><label for="ch_${i}_p">Product / trade name</label><input id="ch_${i}_p" data-chem="${i}" data-k="product" value="${esc(ch.product||"")}"></div>
@@ -626,7 +637,7 @@ function renderForm(){
       <div class="lsrow">${["l","s","rl","rs"].map(k=>`<div class="field"><label for="cu_${i}_${k}">${{l:"Likelihood",s:"Severity",rl:"Resid. L",rs:"Resid. S"}[k]}</label><select id="cu_${i}_${k}" data-cust="${i}" data-k="${k}">${[1,2,3,4,5].map(n=>`<option ${h[k]==n?"selected":""}>${n}</option>`).join("")}</select></div>`).join("")}
       <button class="btn small danger" type="button" data-rmcust="${i}">Remove</button></div></div>`).join("");
   const jobs=LS.get("rams.jobs")||[];
-  const html=
+  let html=
   (!S.example&&!S.job.client&&!S.job.methods.length?`<div class="notice"><p><b>New job.</b> Fill in the sections below and your RAMS builds on the right. Want to see a finished one first?</p><button class="btn small" type="button" id="exLoad">Show an example</button></div>`:"")+
   (S.example?`<div class="notice"><p><b>Example job loaded.</b> Change any field and the RAMS updates as you type, or start a blank job.</p><button class="btn small" type="button" id="exClear">Start blank</button></div>`:"")+
   sec(1,"Your business",`
@@ -647,8 +658,9 @@ function renderForm(){
   sec(3,"Cleaning methods",`<p class="hint">Tick every method used on this job. Hazards, PPE, equipment and the work sequence are added for you.</p>${checkList("methods",METHODS,o=>o.d)}`,j.methods.length+" selected",openSecs.has(3))+
   sec(4,"Access equipment",checkList("access",ACCESS),j.access.length+" selected",openSecs.has(4))+
   sec(5,"Chemicals",`${chemCards||`<p class="hint">No chemicals added yet.</p>`}
-    <div class="row-add"><select id="chemPick" aria-label="Chemical to add"><option value="">Add a chemical…</option>${Object.entries(CHEMS).map(([k,o])=>`<option value="${k}">${esc(o.n)}</option>`).join("")}<option value="custom">Other (enter from SDS)</option></select><button class="btn small" type="button" id="chemAdd">Add</button></div>
-    <p class="hint">Always check the classification against your product's safety data sheet. Switch the preview to “COSHH assessment” for the full standalone document.</p>`,j.chems.length+" added",openSecs.has(5))+
+    <div class="row-add"><select id="chemPick" aria-label="Chemical to add"><option value="">Add a chemical…</option>${(S.company.chemLib||[]).length?`<optgroup label="My chemicals">${S.company.chemLib.map(c=>`<option value="lib:${esc(c.libId)}">${esc(c.name||c.product||"Untitled chemical")}</option>`).join("")}</optgroup>`:""}<optgroup label="Common chemicals">${Object.entries(CHEMS).map(([k,o])=>`<option value="${k}">${esc(o.n)}</option>`).join("")}</optgroup><option value="custom">Other (enter from SDS)</option></select><button class="btn small" type="button" id="chemAdd">Add</button></div>
+    <p class="hint">Always check the classification against your product's safety data sheet. Switch the preview to “COSHH assessment” for the full standalone document.</p>
+    <p class="hint">Use your own products often? Add them once in <b>10 My chemicals</b>${Cloud.user?" and they're saved to your account":""}.</p>`,j.chems.length+" added",openSecs.has(5))+
   sec(6,"Site hazards",checkList("site",SITE),j.site.length+" selected",openSecs.has(6))+
   sec(7,"Extra hazards",`<p class="hint">Anything specific to this site that isn't covered above. Ratings are 1 (low) to 5 (high).</p>${customs}<button class="btn small" type="button" id="custAdd">Add a hazard</button>`,j.custom.length||null,openSecs.has(7))+
   sec(8,"Emergency, welfare & sign-off",`
@@ -670,6 +682,18 @@ function renderForm(){
     ${Cloud.enabled?`<div class="ok"><button class="linkbtn" type="button" id="openAcct">Create a free account</button> to keep your company details and jobs safe and use them on any device.</div>`:""}
     <div class="row-add"><button class="btn small" type="button" id="expJson">Download job file</button><label class="btn small" for="impJson">Open job file</label><input id="impJson" type="file" accept=".json,application/json" hidden></div>
     <p class="hint">Job files let you back up a RAMS or move it to another device.</p>`,jobs.length||null,openSecs.has(9)));
+
+  const lib=S.company.chemLib||[];
+  const libEditor=c=>{const i=lib.indexOf(c);return `<div class="chemcard">
+      <header><b>${esc(c.name||"New chemical")}</b><button class="btn small" type="button" data-libdone="1">Done</button></header>
+      ${LIBF.map(([k,l,ta])=>`<div class="field"><label for="lib_${i}_${k}">${l}</label>${ta?`<textarea id="lib_${i}_${k}" data-lib="${i}" data-k="${k}" rows="2">${esc(c[k]||"")}</textarea>`:`<input id="lib_${i}_${k}" data-lib="${i}" data-k="${k}" value="${esc(c[k]||"")}">`}</div>`).join("")}
+      <div class="field"><span class="lbl">Hazard symbols</span><div class="checks">${Object.entries(GHS).map(([g,o])=>`<label class="check ${c.ghs.includes(g)?"on":""}"><input type="checkbox" data-libarr="ghs" data-lib="${i}" value="${g}" ${c.ghs.includes(g)?"checked":""}><div><b>${esc(o.t)}</b><span>${o.c}</span></div></label>`).join("")}</div></div>
+      <div class="field"><span class="lbl">PPE needed</span><div class="checks">${Object.entries(PPE).map(([p,o])=>`<label class="check ${c.ppe.includes(p)?"on":""}"><input type="checkbox" data-libarr="ppe" data-lib="${i}" value="${p}" ${c.ppe.includes(p)?"checked":""}><div><b>${esc(o.n)}</b></div></label>`).join("")}</div></div>
+      <div class="lsrow">${["Likelihood","Severity","Resid. L","Resid. S"].map((l,n)=>`<div class="field"><label for="lib_${i}_r${n}">${l}</label><select id="lib_${i}_r${n}" data-librisk="${n}" data-lib="${i}">${[1,2,3,4,5].map(v=>`<option ${c.risk[n]==v?"selected":""}>${v}</option>`).join("")}</select></div>`).join("")}</div>
+      <div class="row-add"><button class="btn small danger" type="button" data-libdel="${i}">${delArm==="lib"+i?"Tap again to delete":"Delete from My chemicals"}</button></div></div>`};
+  html+=sec(10,"My chemicals",`<p class="hint">Save the products you use with their safety data sheet details. Add them to any job from the Chemicals list, and their full COSHH assessment fills in automatically.${Cloud.user?" Saved to your account.":" Saved in this browser."}</p>
+    ${lib.map((c,i)=>libEdit===c.libId?libEditor(c):`<div class="jobitem"><div><b>${esc(c.name||"Untitled chemical")}</b><small>${esc([c.product,c.supplier].filter(Boolean).join(" · ")||"No product details yet")}</small></div><button class="btn small" type="button" data-libedit="${esc(c.libId)}">Edit</button><button class="btn small" type="button" data-libadd="${i}">Add to job</button></div>`).join("")}
+    <div class="row-add"><button class="btn small" type="button" id="libNew">Add a chemical to my library</button></div>`,lib.length||null,openSecs.has(10));
   const f=$("#form");const st=f.scrollTop;f.innerHTML=html;f.scrollTop=st;
 }
 let delArm=-1;
@@ -683,10 +707,13 @@ $("#form").addEventListener("input",e=>{
   const t=e.target;
   if(t.dataset.path){setPath(t.dataset.path,t.value);return changed(false)}
   if(t.dataset.chem!=null){S.job.chems[+t.dataset.chem][t.dataset.k]=t.value;return changed(false)}
+  if(t.dataset.lib!=null&&t.dataset.k){const c=S.company.chemLib[+t.dataset.lib];c[t.dataset.k]=t.value;syncLib(c);return changed(false)}
+  if(t.dataset.librisk!=null){const c=S.company.chemLib[+t.dataset.lib];c.risk[+t.dataset.librisk]=+t.value;syncLib(c);return changed(false)}
   if(t.dataset.cust!=null){const k=t.dataset.k;S.job.custom[+t.dataset.cust][k]=["l","s","rl","rs"].includes(k)?+t.value:t.value;return changed(false)}
 });
 $("#form").addEventListener("change",e=>{
   const t=e.target;
+  if(t.dataset.libarr){const c=S.company.chemLib[+t.dataset.lib];const arr=c[t.dataset.libarr];const i=arr.indexOf(t.value);if(t.checked&&i<0)arr.push(t.value);if(!t.checked&&i>=0)arr.splice(i,1);t.closest(".check").classList.toggle("on",t.checked);syncLib(c);return changed(false)}
   if(t.dataset.list){const arr=S.job[t.dataset.list];const i=arr.indexOf(t.value);if(t.checked&&i<0)arr.push(t.value);if(!t.checked&&i>=0)arr.splice(i,1);return changed(true)}
   if(t.id==="logoIn"&&t.files[0]){const fr=new FileReader();fr.onload=()=>shrinkImage(fr.result).then(u=>{S.company.logo=u;changed(true)});fr.readAsDataURL(t.files[0])}
   if(t.id==="impJson"&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.job)throw 0;S={docType:S.docType,company:Cloud.user?S.company:Object.assign(blankCompany(),d.company||S.company),job:Object.assign(blankJob(),d.job,{id:newId()})};changed(true);toast("Job opened")}catch(err){toast("That file isn't a WashRAMS job file")}};fr.readAsText(t.files[0])}
@@ -696,7 +723,15 @@ $("#form").addEventListener("click",e=>{
   if(t.id==="exLoad"){const ex=exampleState();S={docType:S.docType,company:S.company,job:Object.assign(ex.job,{id:newId()}),example:true};openSecs=new Set([1,2,3]);renderForm();renderDoc();persist();return}
   if(t.id==="exClear"){S={docType:S.docType,company:S.company.name==="Brightside Exterior Cleaning Ltd"?blankCompany():S.company,job:blankJob()};S.job.ref=autoRef();openSecs=new Set([1,2]);changed(true);return}
   if(t.dataset.rmchem!=null){S.job.chems.splice(+t.dataset.rmchem,1);return changed(true)}
+  if(t.id==="libNew"){if(!S.company.chemLib)S.company.chemLib=[];const c=blankLibChem();S.company.chemLib.push(c);libEdit=c.libId;openSecs.add(10);changed(true);setTimeout(()=>{const f=document.querySelector('[data-k="name"][data-lib]');if(f)f.focus()},0);return}
+  if(t.dataset.libedit){libEdit=t.dataset.libedit;renderForm();return}
+  if(t.dataset.libdone){libEdit=null;renderForm();toast("Saved to My chemicals");return}
+  if(t.dataset.libdel!=null){const i=+t.dataset.libdel;if(delArm!=="lib"+i){delArm="lib"+i;renderForm();setTimeout(()=>{if(delArm==="lib"+i){delArm=-1;renderForm()}},4000);return}
+    delArm=-1;S.company.chemLib.splice(i,1);libEdit=null;changed(true);toast("Removed from My chemicals");return}
+  if(t.dataset.libadd!=null){const c=S.company.chemLib[+t.dataset.libadd];if(S.job.chems.some(x=>x.libId===c.libId))return toast("That chemical is already on this job");S.job.chems.push(libToJob(c));openSecs.add(5);changed(true);toast("Added to this job");return}
+  if(t.dataset.tolib!=null){const ch=S.job.chems[+t.dataset.tolib];if(!S.company.chemLib)S.company.chemLib=[];const c=Object.assign(blankLibChem(),JSON.parse(JSON.stringify(ch)));c.libId=newId();delete c.id;ch.libId=c.libId;S.company.chemLib.push(c);libEdit=c.libId;openSecs.add(10);changed(true);toast("Saved to My chemicals. Add the SDS details in section 10.");return}
   if(t.id==="chemAdd"){const v=$("#chemPick").value;if(!v)return toast("Choose a chemical from the list first");
+    if(v.startsWith("lib:")){const c=(S.company.chemLib||[]).find(x=>x.libId===v.slice(4));if(!c)return;if(S.job.chems.some(x=>x.libId===c.libId))return toast("That chemical is already on this job");S.job.chems.push(libToJob(c));openSecs.add(5);return changed(true)}
     if(v!=="custom"&&S.job.chems.some(c=>c.id===v))return toast("That chemical is already added");
     S.job.chems.push({id:v,product:"",dil:"",app:"",name:"",cls:""});openSecs.add(5);return changed(true)}
   if(t.id==="custAdd"){S.job.custom.push({h:"",who:"Operatives",l:3,s:3,c:"",rl:1,rs:3});openSecs.add(7);return changed(true)}
@@ -725,7 +760,7 @@ function collect(){
   if(j.methods.includes("softwash")||j.chems.length)train.add("Soft washing and chemical handling");
   j.access.forEach(k=>{const a=ACCESS[k];if(!a)return;if(a.haz)rows.push({grp:"Access equipment",h:a.haz});if(a.train)train.add(a.train);(a.ppe||[]).forEach(p=>ppe.add(p));if(k!=="ground"&&!equip.includes(a.n))equip.push(a.n)});
   j.site.forEach(k=>{const s=SITE[k];if(!s)return;rows.push({grp:"Site conditions",h:s.h});(s.ppe||[]).forEach(p=>ppe.add(p))});
-  j.chems.forEach(c=>{const r=CHEMS[c.id];if(r)r.ppe.forEach(p=>ppe.add(p))});
+  j.chems.forEach(c=>{const r=CHEMS[c.id];(r?r.ppe:(c.ppe||[])).forEach(p=>{if(PPE[p])ppe.add(p)})});
   if(j.chems.some(c=>c.id!=="pure"&&c.id!=="fuel")){rows.push({grp:"Chemicals",h:["Exposure to hazardous substances (see COSHH assessments)","Operatives, public, occupants",3,4,"Substances assessed in Section 6. Lowest-hazard product and lowest effective dilution used. PPE worn. Containers labelled and secured. Eyewash and water on vehicle.",1,4]});
     if(!j.site.includes("drains"))rows.push({grp:"Chemicals",h:["Chemical run-off to drains and watercourses","Environment",3,4,"Gullies covered or blocked. Drain socks used. Run-off collected or contained. Nothing discharged to surface water drains.",1,4]})}
   j.custom.filter(h=>h.h).forEach(h=>rows.push({grp:"Site-specific",h:[h.h,h.who,h.l,h.s,h.c,h.rl,h.rs]}));
@@ -740,7 +775,13 @@ function collect(){
 function ghsSvg(k){return `<svg viewBox="0 0 44 44" aria-hidden="true"><rect x="7" y="7" width="30" height="30" transform="rotate(45 22 22)" fill="#fff" stroke="#d1121b" stroke-width="3.4"/>${GHS_GLYPH[k]||""}</svg>`}
 
 function renderDoc(){(S.docType==="coshh"?renderCoshh:renderRams)();document.querySelectorAll("#dtRams,#dtCoshh").forEach(b=>b.setAttribute("aria-pressed",(b.id==="dtCoshh")===(S.docType==="coshh")))}
-function chemInfo(ch){const r=CHEMS[ch.id]||{n:ch.name||"Custom chemical",use:"",cls:ch.cls||"See safety data sheet",ghs:[],ppe:[],routes:"See SDS",ctrl:"Follow the controls in sections 7 and 8 of the product safety data sheet.",fa:"See section 4 of the safety data sheet.",store:"See section 7 of the safety data sheet.",spill:"See section 6 of the safety data sheet."};return{ch,r,x:COSHH_X[ch.id]||CUSTOM_X}}
+function chemInfo(ch){
+  if(CHEMS[ch.id])return{ch,r:CHEMS[ch.id],x:COSHH_X[ch.id]||CUSTOM_X};
+  const r={n:ch.name||"Custom chemical",use:ch.use||"",cls:ch.cls||"See safety data sheet",ghs:ch.ghs||[],ppe:ch.ppe||[],routes:ch.routes||"See SDS",
+    ctrl:ch.ctrl||"Follow the controls in sections 7 and 8 of the product safety data sheet.",fa:ch.fa||"See section 4 of the safety data sheet.",
+    store:ch.store||"See section 7 of the safety data sheet.",spill:ch.spill||"See section 6 of the safety data sheet."};
+  const x={};Object.keys(CUSTOM_X).forEach(k=>x[k]=(ch[k]&&(k!=="risk"||ch[k].length===4))?ch[k]:CUSTOM_X[k]);
+  return{ch,r,x}}
 function renderRams(){
   const c=S.company,j=S.job;const {ms,rows,ppe,equip,train}=collect();let n=0;const H=t=>`<h2><span class="sn">${String(++n).padStart(2,"0")}</span>${t}</h2>`;
   const highest=rows.reduce((m,r)=>Math.max(m,r.h[2]*r.h[3]),0);const highestR=rows.reduce((m,r)=>Math.max(m,r.h[5]*r.h[6]),0);
