@@ -231,7 +231,7 @@ details.sec>summary .count+*{margin-left:0}
         <li><b>Your branding</b><span>Company details and logo on every page. Set them once and they're there for every job.</span></li>
         <li><b>Saved to your account</b><span>Jobs and defaults stored securely and ready on your phone, tablet or laptop.</span></li>
       </ul>
-      <div class="home-methods" aria-label="Methods covered"><span>Pressure washing</span><span>Soft washing</span><span>Roof cleaning</span><span>Gutter cleaning</span><span>Window cleaning</span><span>Conservatory roofs</span><span>Solar panels</span><span>Decking</span><span>Steam cleaning</span></div>
+      <div class="home-methods" aria-label="Methods covered"><span>Pressure washing</span><span>Soft washing</span><span>Roof scraping</span><span>Roof washing</span><span>Gutter cleaning</span><span>Window cleaning</span><span>Conservatory roofs</span><span>Solar panels</span><span>Decking</span><span>Steam cleaning</span></div>
     </div>
     <div class="authcard" id="homeAuth"></div>
   </section>
@@ -308,7 +308,7 @@ const METHODS = {
       ["Mixing incompatible chemicals (e.g. hypochlorite with acids releases chlorine gas)","Operatives, public",2,5,"Products never mixed except as the SDS directs. Dedicated, labelled tanks and sprayers for each product. Systems flushed between products. Mixing done in open air.",1,5]
     ],
     steps:["Inspect surfaces for cracked render, coatings and sensitive materials; carry out a test patch.","Agree with the occupant to close windows and vents; cover sockets, lights and vulnerable fittings; pre-wet plants.","Mix solution in open air at the stated dilution in a labelled container, adding chemical to water.","Apply bottom-up at low pressure, keeping the surface wet for the stated dwell time.","Agitate stubborn areas with a soft brush if needed.","Rinse top-down with clean low-pressure water; rinse plants and surrounding areas again."]},
-  roof:{n:"Roof cleaning",d:"Moss removal and biocide treatment of tiled or slate roofs.", wah:true,
+  roof:{n:"Roof cleaning (scraping)",d:"Hand scraping and brushing of moss and lichen from tiled or slate roofs, with optional biocide treatment.", wah:true,
     ppe:["helmet","glasses","gloves_gen","boots"],
     equip:["Hand scrapers and roof brushes","Low-pressure sprayer","Debris bags","Barriers and signage"],
     haz:[
@@ -318,6 +318,18 @@ const METHODS = {
       ["Damage to roof coverings","Property",3,3,"Roof condition surveyed and photographed. Hand scraping and soft wash used rather than high pressure on tiles. Pre-existing damage reported to client.",1,3]
     ],
     steps:["Survey the roof from the ground or a safe platform: covering type, condition, fragile areas and possible asbestos.","Set an exclusion zone below; protect conservatory roofs, gutters and downpipes.","Remove moss by hand scraping or rotary brushing from a safe access position, working from ridge downwards.","Bag moss and debris; clear fallen debris from gutters and downpipes.","Apply biocide at the stated dilution with a low-pressure sprayer.","Rinse surrounding areas and check gutters and downpipes flow freely."]},
+  roofwash:{n:"Roof cleaning (low-pressure washing)",d:"Low-pressure water rinse of tiled or slate roofs to remove moss, algae and lichen, with optional pre- and post-biocide treatment.", wah:true,
+    ppe:["helmet","goggles","gloves_chem","boots","suit"],
+    equip:["Low-pressure washer or pump (fan nozzle)","Telescopic lance / pole with angled nozzle","Roof brushes","Low-pressure sprayer for biocide","Gutter clearing tools and drain covers","Barriers and signage"],
+    haz:[
+      ["Falls from roof edge or access equipment","Operatives",3,5,"Roof washed from the ground, MEWP, tower or scaffold wherever possible. No walking on wet roofs. Work at Height Regulations 2005 hierarchy followed. Trained, competent operatives only.",1,5],
+      ["Slippery roof and access surfaces from water, algae and moss slurry","Operatives",4,4,"Operatives stay off the roof surface. Access equipment footings kept clear of run-off. Slip-resistant footwear. Work paused if surfaces become unsafe.",1,4],
+      ["Water forced under tiles or into lofts, soffits and vents","Property, occupants",3,3,"Low pressure only with a wide fan nozzle. Spray directed down the roof slope, never upwards into tile laps. Vents, aerials and roof windows identified. Client asked to check loft after rinsing.",1,3],
+      ["Damage to tiles, slates, ridges and pointing","Property",3,3,"Roof condition surveyed and photographed. Pressure kept to the minimum needed and lance held at a safe distance. Test area first. Fragile or loose coverings left and reported.",1,3],
+      ["Falling moss, slurry and debris onto people and property below","Public, occupants, property",3,3,"Exclusion zone below with barriers and signs. Vehicles moved. Windows and doors closed. Debris collected as work proceeds.",1,3],
+      ["Blocked gutters, downpipes and drains from moss slurry","Property, environment",3,3,"Gutters and outlets cleared during and after washing. Drain covers and socks used. Slurry collected and bagged; not washed into surface water drains.",1,3]
+    ],
+    steps:["Survey the roof from the ground or a safe platform: covering type, condition, fragile areas, vents, aerials, solar panels and possible asbestos.","Set an exclusion zone below; move vehicles; ask occupants to close windows and roof lights; cover drains and gullies.","Apply pre-treatment biocide (if specified) at the stated dilution with a low-pressure sprayer and allow dwell time.","Rinse from a safe access position using low pressure and a fan nozzle, working from the ridge down the slope, never spraying up into the tile laps.","Clear moss and slurry from gutters, outlets and downpipes as work proceeds; bag debris.","Apply post-treatment biocide (if specified); rinse surrounding areas and check gutters and downpipes flow freely.","Ask the client to check the loft and internal ceilings for any water ingress before leaving."]},
   gutter:{n:"Gutter cleaning",d:"Clearing gutters and downpipes, normally with a gutter vacuum from the ground.", wah:true,
     ppe:["glasses","gloves_gen","boots","ear"],
     equip:["Gutter vacuum with carbon / glass-fibre poles","Pole camera and monitor","Drain rods","Waste bags"],
