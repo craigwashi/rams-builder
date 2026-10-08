@@ -7,14 +7,14 @@
 <title>WashRAMS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 /* Layout: working-tool split. Form rail on the left, live A4 document on the right; stacks with an Edit/Preview switch on phones. */
 :root{
   --bg:#eef2f3; --panel:#ffffff; --panel-2:#f6f8f9; --ink:#14242c; --muted:#56656d; --line:#d5dde1;
   --accent:#0a6a85; --accent-ink:#ffffff; --accent-soft:#dcedf2; --amber:#c98a00; --danger:#b3261e;
   --focus:#0a6a85;
-  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-display:"Archivo Narrow","Arial Narrow",Arial,sans-serif;
   --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
   color-scheme:light;
@@ -37,7 +37,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .topbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
 .brand{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
 .brand-mark{width:34px;height:34px;flex:none}
-.brand h1{font:800 20px/1 var(--f-display);font-stretch:80%;letter-spacing:.01em;margin:0;text-transform:uppercase}
+.brand h1{font:800 20px/1 var(--f-display);letter-spacing:.01em;margin:0;text-transform:uppercase}
 .brand small{display:block;font:500 12px/1.2 var(--f-body);color:var(--muted);letter-spacing:.02em;text-transform:none;margin-top:2px}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
@@ -58,7 +58,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .overlay{position:fixed;inset:0;background:rgba(10,20,25,.45);display:flex;align-items:flex-start;justify-content:center;padding:calc(48px + env(safe-area-inset-top,0px)) 16px 16px;z-index:30;overflow:auto}
 .panel{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;width:100%;max-width:400px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
 .panel header{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.panel h2{font:800 20px/1.1 var(--f-display);font-stretch:85%;margin:0;text-transform:uppercase;letter-spacing:.01em}
+.panel h2{font:800 20px/1.1 var(--f-display);margin:0;text-transform:uppercase;letter-spacing:.01em}
 .panel p{margin:0}
 .panel .x{border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 8px}
 .panel .btn.primary{justify-content:center;padding:9px 12px}
@@ -72,18 +72,18 @@ button,input,select,textarea{font:inherit;color:inherit}
 .home{min-height:100%;display:flex;flex-direction:column}
 .home-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;max-width:1120px;width:100%;margin:0 auto}
 .home-hero{flex:1;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,400px);gap:40px;align-items:start;max-width:1120px;width:100%;margin:0 auto;padding:32px 16px 40px}
-.home-hero h2{font:800 clamp(34px,5.4vw,60px)/.98 var(--f-display);font-stretch:78%;text-transform:uppercase;letter-spacing:.005em;margin:0 0 16px;text-wrap:balance}
+.home-hero h2{font:800 clamp(34px,5.4vw,60px)/.98 var(--f-display);text-transform:uppercase;letter-spacing:.005em;margin:0 0 16px;text-wrap:balance}
 .home-hero h2 em{font-style:normal;color:var(--accent)}
 .home-lede{font-size:18px;line-height:1.5;max-width:56ch;color:var(--muted);margin:0 0 24px}
 .home-feats{list-style:none;padding:0;margin:0 0 26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .home-feats li{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
-.home-feats b{display:block;font:700 15px/1.25 var(--f-display);font-stretch:90%;margin-bottom:3px}
+.home-feats b{display:block;font:700 15px/1.25 var(--f-display);margin-bottom:3px}
 .home-feats span{font-size:14px;color:var(--muted)}
 .home-methods{display:flex;flex-wrap:wrap;gap:6px}
 .home-methods span{font:500 12px var(--f-mono);border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);background:var(--panel)}
 .authcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 14px 40px rgba(0,0,0,.08);position:sticky;top:16px}
 .authcard header{display:flex;justify-content:space-between;align-items:center}
-.authcard h2{font:800 22px/1.1 var(--f-display);font-stretch:85%;margin:0;text-transform:uppercase}
+.authcard h2{font:800 22px/1.1 var(--f-display);margin:0;text-transform:uppercase}
 .authcard p{margin:0}
 .authcard .btn.primary{justify-content:center;padding:10px 12px}
 .home-foot{border-top:1px solid var(--line);padding:16px;font-size:13px;color:var(--muted);text-align:center}
@@ -94,7 +94,7 @@ details.sec{background:var(--panel);border:1px solid var(--line);border-radius:1
 details.sec>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;align-items:baseline;gap:10px}
 details.sec>summary::-webkit-details-marker{display:none}
 details.sec>summary .n{font:500 12px var(--f-mono);color:var(--accent)}
-details.sec>summary h2{font:700 16px/1.2 var(--f-display);font-stretch:88%;margin:0;letter-spacing:.01em}
+details.sec>summary h2{font:700 16px/1.2 var(--f-display);margin:0;letter-spacing:.01em}
 details.sec>summary .count{margin-left:auto;font-size:12px;color:var(--muted)}
 details.sec>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-left:8px;align-self:center;transition:transform .15s}
 details.sec[open]>summary::after{transform:rotate(-135deg)}
@@ -140,19 +140,19 @@ details.sec>summary .count+*{margin-left:0}
 .doc{width:794px;background:#fff;color:#1a1f22;font:11.5px/1.45 "Source Sans 3","Segoe UI",Arial,sans-serif;padding:44px 48px;box-shadow:0 1px 3px rgba(0,0,0,.12),0 12px 32px rgba(0,0,0,.12)}
 .doc *{box-sizing:border-box}
 .doc.pdf{width:auto;padding:0;box-shadow:none}
-.doc h1,.doc h2,.doc h3{font-family:"Archivo","Arial Narrow",Arial,sans-serif;color:#0d2a35;text-wrap:balance}
+.doc h1,.doc h2,.doc h3{font-family:"Archivo Narrow","Arial Narrow",Arial,sans-serif;color:#0d2a35;text-wrap:balance}
 .doc .dhead{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:3px solid #0a6a85;padding-bottom:14px}
 .doc .dhead .co{display:flex;gap:12px;align-items:center}
 .doc .dhead img{max-height:56px;max-width:170px}
-.doc .dhead .coname{font:800 17px/1.15 "Archivo",Arial,sans-serif;font-stretch:85%;color:#0d2a35;text-transform:uppercase;letter-spacing:.02em}
+.doc .dhead .coname{font:800 17px/1.15 "Archivo Narrow","Arial Narrow",Arial,sans-serif;color:#0d2a35;text-transform:uppercase;letter-spacing:.02em}
 .doc .dhead .codet{color:#4d5a61;font-size:10.5px;margin-top:2px}
 .doc .dtitle{text-align:right}
-.doc .dtitle h1{font-size:22px;font-weight:800;font-stretch:78%;margin:0;text-transform:uppercase;letter-spacing:.02em;line-height:1.05}
+.doc .dtitle h1{font-size:22px;font-weight:800;margin:0;text-transform:uppercase;letter-spacing:.02em;line-height:1.05}
 .doc .dtitle .sub{font-size:11px;color:#4d5a61;margin-top:4px}
 .doc .ref{font:500 11px "JetBrains Mono",Consolas,monospace;color:#0a6a85;margin-top:6px}
-.doc h2{font-size:14px;font-weight:800;font-stretch:85%;text-transform:uppercase;letter-spacing:.04em;margin:22px 0 8px;display:flex;gap:8px;align-items:baseline;border-bottom:1px solid #c9d4d8;padding-bottom:4px}
+.doc h2{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:22px 0 8px;display:flex;gap:8px;align-items:baseline;border-bottom:1px solid #c9d4d8;padding-bottom:4px}
 .doc h2 .sn{font:500 11px "JetBrains Mono",Consolas,monospace;color:#0a6a85}
-.doc h3{font-size:12.5px;font-weight:700;margin:12px 0 4px;font-stretch:92%}
+.doc h3{font-size:12.5px;font-weight:700;margin:12px 0 4px;}
 .doc p{margin:0 0 6px}
 .doc table{width:100%;border-collapse:collapse;margin:4px 0 6px}
 .doc th,.doc td{border:1px solid #c9d4d8;padding:5px 7px;vertical-align:top;text-align:left}
@@ -966,7 +966,7 @@ async function saveFile(name,data){
 function docCss(){const out=[];for(const sh of document.styleSheets){try{for(const r of sh.cssRules){if(r.selectorText&&/\.doc\b/.test(r.selectorText))out.push(r.cssText)}}catch(e){}}return out.join("\n")}
 function standaloneHtml(){
   return `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(fileBase())}</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>body{margin:0;background:#e9eef0}${docCss()}
 .doc{margin:24px auto}
 .bar{max-width:794px;margin:16px auto 0;font:14px system-ui;color:#333}
